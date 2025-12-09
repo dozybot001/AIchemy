@@ -3,56 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Packer</title>
+    <title>Code Packer - AI 项目代码助手</title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
 
 <div class="container">
     <header>
         <h1>Code Packer</h1>
-        <div class="subtitle">通用项目代码合并工具 · 专为 LLM 优化</div>
+        <div class="subtitle">让 AI 读懂你的项目 · 让代码交互更顺畅</div>
+        
+        <div class="hero-box">
+            <p>
+                🚀 <strong>为什么需要它？</strong> 将整个项目打包成 AI 可读的单一文本，保留目录结构，自动过滤 node_modules 等文件。
+                <br>
+                🔄 <strong>反向还原：</strong> 支持将 AI 生成的完整代码文本一键还原为项目压缩包。
+            </p>
+            <div class="hero-links">
+                <a href="https://github.com/dozybot001/code_packer" target="_blank">View on GitHub</a>
+                <span class="divider">|</span>
+                <a href="https://dozybot001.github.io/2025/12/09/21_S/" target="_blank">My Blog Website</a>
+            </div>
+        </div>
     </header>
 
-    <div class="upload-zone">
-        <span class="icon-folder">📁</span>
-        <div style="font-size: 1.1rem; font-weight: 500;">点击选择或拖拽项目文件夹</div>
-        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
-            支持 Flutter, Vue, React, Python, Go, Java 等所有项目
-        </div>
-        <input type="file" id="fileInput" webkitdirectory directory multiple>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('pack')">📂 打包 (Code to Text)</button>
+        <button class="tab-btn" onclick="switchTab('unpack')">📦 还原 (Text to Zip)</button>
     </div>
 
-    <div class="info-panel">
-        <div class="tag-container">
-            <span class="tag">Auto-Ignore: node_modules</span>
-            <span class="tag">.git</span>
-            <span class="tag">.venv</span>
-            <span class="tag">bin/obj</span>
-            <span class="tag">images/videos</span>
+    <div id="packSection" class="section-content active">
+        <div class="upload-zone">
+            <span class="icon-folder">📁</span>
+            <div style="font-size: 1.1rem; font-weight: 500;">点击选择或拖拽项目文件夹</div>
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
+                支持 Flutter, Vue, React, Python, Java 等任意项目
+            </div>
+            <input type="file" id="fileInput" webkitdirectory directory multiple>
         </div>
-        <div id="status" class="stats">等待上传...</div>
+
+        <div class="info-panel">
+            <div id="status" class="stats">等待上传...</div>
+        </div>
+
+        <div id="fileListContainer" class="file-list-container" style="display: none;">
+            <div class="file-list-header">
+                <span>核心文件预览 (可手动剔除)</span>
+                <button class="btn-xs" onclick="toggleAllFiles()">全选/反选</button>
+            </div>
+            <div id="fileList" class="file-list"></div>
+        </div>
+        
+        <div class="action-bar" id="actionBar">
+            <button class="btn btn-secondary" onclick="copyToClipboard()">📋 复制 Prompt</button>
+            <button class="btn btn-primary" onclick="downloadFile()">⬇️ 下载 .txt</button>
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <div class="preview-header">
+                <span>Prompt 预览</span>
+                <span id="tokenEstimate">Token 估算: 0</span>
+            </div>
+            <pre id="previewArea"></pre>
+        </div>
     </div>
 
-    <div class="action-bar" id="actionBar">
-        <button class="btn btn-secondary" onclick="copyToClipboard()">
-            📋 复制内容
-        </button>
-        <button class="btn btn-primary" onclick="downloadFile()">
-            ⬇️ 下载 .txt
-        </button>
+    <div id="unpackSection" class="section-content">
+        <div class="upload-zone dashed-zone">
+            <span class="icon-folder">📄</span>
+            <div style="font-size: 1.1rem; font-weight: 500;">拖入 .txt 文件 或 粘贴内容</div>
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
+                将 Code Packer 格式的文本还原为 .zip
+            </div>
+            <input type="file" id="txtInput" accept=".txt">
+        </div>
+        
+        <div class="textarea-container">
+            <textarea id="pasteArea" placeholder="或者直接在这里粘贴 AI 生成的完整代码文本..."></textarea>
+        </div>
+
+        <div class="guide-box">
+            <strong>💡 提示技巧：</strong> 想要 AI 生成可还原的代码？试试这个 Prompt：
+            <div class="code-snippet" onclick="copyPromptHint()">
+                "请修改代码，并以 Code Packer 格式（包含 Project Structure 和 === File: path === 标记）输出完整的修改后文件内容，不要省略。"
+            </div>
+        </div>
+
+        <div class="action-bar" style="display: flex;">
+            <button class="btn btn-primary" onclick="unpackToZip()">⚡️ 生成并下载 .zip</button>
+        </div>
     </div>
 
-    <div class="preview-container" id="previewContainer">
-        <div class="preview-header">
-            <span>预览 (前 3000 字符)</span>
-            <span id="tokenEstimate">Token 估算: 0</span>
-        </div>
-        <pre id="previewArea"></pre>
-    </div>
 </div>
 
 <script type="text/javascript" src="main.js"></script>
-
 </body>
 </html>
