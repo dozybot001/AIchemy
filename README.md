@@ -83,3 +83,5 @@ Project Packer 不仅仅是一个合并工具，它适用于多种开发流：
   * **Libs:** JSZip, FileSaver.js
 
 -----
+
+注：JetBrains Mono 字体会将 `===` 渲染为三行横线。

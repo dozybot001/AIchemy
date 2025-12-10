@@ -41,7 +41,7 @@ body {
         radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 20%);
 }
 
-/* 容器与基础 */
+/* ================= 容器与头部 ================= */
 .container {
     width: 100%; max-width: 850px;
     background: var(--card-bg);
@@ -51,35 +51,110 @@ body {
     backdrop-filter: blur(20px);
 }
 
-/* 头部 */
 header { margin-bottom: 40px; text-align: left; }
 .logo-area { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+
 h1 {
     font-size: 2rem; margin: 0; letter-spacing: -0.02em;
     background: linear-gradient(135deg, #fff 30%, #949ba4 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
+
 .tag {
     font-size: 0.75rem; background: var(--border-subtle); padding: 4px 8px;
     border-radius: 100px; color: var(--text-secondary); font-weight: 500;
 }
+
 .subtitle { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 24px; }
 
+/* ================= Hero Box (新版设计) ================= */
 .hero-box {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, transparent 100%);
-    border-left: 3px solid var(--accent-primary);
-    padding: 16px 24px; border-radius: 4px var(--radius-md) var(--radius-md) 4px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-top: -10px; /* 向上微调，拉近与副标题距离 */
+    border-radius: 0;
 }
-.hero-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.hero-content p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); }
-.hero-links { display: flex; gap: 16px; }
+
+.hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* 左侧 Feature Tags 容器 */
+.hero-features {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 单个胶囊 Tag 样式 */
+.feature-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    
+    /* 尺寸与形状 */
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem; /* 小字体 */
+    line-height: 1.4;
+    
+    /* 颜色与边框 */
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-tertiary); /* 暗色文字 */
+    font-weight: 500;
+    
+    user-select: none;
+    cursor: default;
+    transition: all 0.2s ease;
+}
+
+.feature-tag:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+}
+
+/* Tag 图标颜色 */
+.feature-tag.blue .f-icon { color: #60a5fa; }
+.feature-tag.green .f-icon { color: #34d399; }
+.feature-tag.orange .f-icon { color: #fbbf24; }
+.feature-tag.purple .f-icon { color: #a78bfa; }
+
+.f-icon {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* 右侧链接区域 */
+.hero-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hero-links .divider {
+    color: var(--border-subtle);
+    font-size: 0.7rem;
+    opacity: 0.5;
+}
+
 .link-item {
-    color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
-    display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s;
 }
 .link-item:hover { color: var(--accent-primary); }
 
-/* Tabs 切换 */
+
+/* ================= Tabs 切换 ================= */
 .tabs {
     display: flex; gap: 8px; margin-bottom: 30px;
     background: #111; padding: 4px; border-radius: 14px; width: fit-content;
@@ -92,12 +167,13 @@ h1 {
 }
 .tab-btn:hover { color: var(--text-primary); }
 .tab-btn.active { background: var(--panel-bg); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
 .section-content { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 .section-content.active { display: block; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Upload Zone 2.0 */
+/* ================= Upload Zone 2.0 ================= */
 .upload-zone {
     border: 2px dashed var(--border-subtle); border-radius: var(--radius-md);
     padding: 40px; text-align: center; cursor: pointer;
@@ -128,7 +204,7 @@ h1 {
     padding: 2px 8px; border-radius: 4px; margin: 0 2px;
 }
 
-/* 状态胶囊 (替代原先生硬的文本) */
+/* ================= 状态栏与仪表盘 ================= */
 .status-bar-container { display: flex; justify-content: center; margin-bottom: 24px; }
 .status-capsule {
     display: inline-flex; align-items: center; gap: 10px;
@@ -150,7 +226,6 @@ h1 {
 }
 .status-icon { font-size: 1.1em; }
 
-/* Dashboard Grid */
 .dashboard-grid {
     display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px;
     margin-bottom: 24px; animation: fadeIn 0.5s ease;
@@ -164,7 +239,7 @@ h1 {
 .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); font-family: var(--font-code); }
 .action-card { flex-direction: row; align-items: center; gap: 10px; background: transparent; border: none; padding: 0; }
 
-/* 按钮 */
+/* ================= 按钮与列表 ================= */
 .btn {
     border: none; padding: 12px 20px; border-radius: 12px;
     font-size: 0.9rem; font-weight: 600; cursor: pointer;
@@ -185,7 +260,6 @@ h1 {
 }
 .btn-xs:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 
-/* Panels */
 .panel-container {
     background: #111; border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle); overflow: hidden; margin-bottom: 24px;
@@ -198,7 +272,6 @@ h1 {
 .panel-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 
 .file-list { max-height: 250px; overflow-y: auto; padding: 8px; }
-/* 自定义滚动条 */
 .file-list::-webkit-scrollbar { width: 6px; }
 .file-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 
@@ -217,7 +290,7 @@ pre {
     overflow: auto; max-height: 400px; font-family: var(--font-code); font-size: 0.8rem; line-height: 1.5;
 }
 
-/* Unpack Area */
+/* ================= Unpack Area & Tools ================= */
 .textarea-container textarea {
     width: 100%; height: 200px; background: #111;
     border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
@@ -260,9 +333,21 @@ pre {
 
 @keyframes toastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Mobile Adaption */
+/* ================= Mobile Adaption ================= */
 @media (max-width: 600px) {
     .container { padding: 24px; }
     .dashboard-grid { grid-template-columns: 1fr; }
-    .hero-content { flex-direction: column; align-items: flex-start; }
+    
+    .hero-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .hero-links {
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-subtle);
+    }
 }
