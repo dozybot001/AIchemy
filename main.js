@@ -21,6 +21,7 @@ const CONFIG = {
 // 全局状态
 let globalFiles = [];
 let finalOutput = "";
+let currentProjectName = "project_context"; // 新增：用于存储文件夹名称
 
 // ================= Tab 切换 =================
 function switchTab(tab) {
@@ -50,6 +51,14 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     await new Promise(r => setTimeout(r, 400));
     
     globalFiles = [];
+
+    if (files.length > 0) {
+        // webkitRelativePath 通常格式为 "FolderName/SubFolder/file.js"
+        const firstPath = files[0].webkitRelativePath;
+        if (firstPath) {
+            currentProjectName = firstPath.split('/')[0];
+        }
+    }
 
     for (const file of files) {
         const path = file.webkitRelativePath || file.name;
@@ -293,16 +302,50 @@ function readFileAsText(file) {
 }
 
 function downloadFile() {
+
+    if (!finalOutput) {
+        showToast("没有可下载的内容", "error");
+        return;
+    }
+
     const blob = new Blob([finalOutput], { type: 'text/plain' });
-    saveAs(blob, "project_context.txt");
-    showToast("文件下载已开始", "success");
+    
+    // [修改] 生成带时间戳的文件名
+    const now = new Date();
+    // 格式化为 YYYYMMDD_HHMM
+    const timeStr = now.getFullYear() +
+                    String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') + "_" +
+                    String(now.getHours()).padStart(2, '0') +
+                    String(now.getMinutes()).padStart(2, '0');
+    
+    const fileName = `${currentProjectName}_${timeStr}.txt`;
+    
+    saveAs(blob, fileName);
+    showToast(`文件下载已开始: ${fileName}`, "success");
+
+    // [新增] 在这里触发历史记录保存
+    saveHistory();
 }
 
 async function copyToClipboard() {
+    // 1. 确保有内容
+    if (!finalOutput) {
+        showToast("没有可复制的内容", "error");
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(finalOutput);
         showToast("已复制到剪贴板！", "success");
-    } catch (e) { showToast('复制失败，请尝试下载文件', 'error'); }
+        
+        // [新增] 复制成功后，触发历史记录保存
+        saveHistory(); 
+
+    } catch (e) { 
+        showToast('复制失败，请尝试下载文件', 'error'); 
+        console.error(e);
+    }
 }
 
 function generateTree(paths) {
@@ -385,5 +428,138 @@ async function fetchAndRenderReadme() {
                 <button class="btn btn-secondary" onclick="fetchAndRenderReadme()" style="margin:20px auto">重试</button>
             </div>
         `;
+    }
+}
+
+// ================= 新增逻辑: 手动添加额外文件 =================
+
+const extraInput = document.getElementById('extraFileInput');
+
+function triggerAddExtra() {
+    extraInput.click();
+}
+
+extraInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setStatus('processing', '正在追加文件...');
+    
+    let addedCount = 0;
+    for (const file of files) {
+        // 额外添加的文件没有 webkitRelativePath，或者路径不包含根目录
+        // 我们人为给它加一个虚拟目录 "Extra_Files/" 以便在树形图中区分
+        const path = "Extra_Files/" + file.name;
+        
+        // 查重：如果已经存在同名路径，先删除旧的
+        const existIndex = globalFiles.findIndex(f => f.path === path);
+        if (existIndex > -1) globalFiles.splice(existIndex, 1);
+
+        try {
+            const text = await readFileAsText(file);
+            globalFiles.push({ file, path, content: text, selected: true });
+            addedCount++;
+        } catch (err) { console.warn(`Skipped: ${path}`); }
+    }
+
+    if (addedCount > 0) {
+        renderFileList();
+        generateOutput();
+        showToast(`已追加 ${addedCount} 个文件`, "success");
+        // 如果是首次仅上传单文件，也更新项目名
+        if (currentProjectName === "project_context" && files.length > 0) {
+             currentProjectName = "Mixed_Files";
+        }
+    }
+    
+    // 清空 input 允许重复选择同名文件
+    extraInput.value = '';
+});
+
+// ================= 历史记录管理系统 =================
+
+const MAX_HISTORY = 10; // 只保留最近10条
+
+// 页面加载时初始化历史记录
+window.addEventListener('DOMContentLoaded', () => {
+    renderHistory();
+    // 检查是否有默认项目提示 (这里只能做UI提示，无法自动加载)
+    const history = getHistory();
+    if (history.length > 0) {
+        console.log("欢迎回来，上次打包的项目是: " + history[0].name);
+    }
+});
+
+function getHistory() {
+    try {
+        return JSON.parse(localStorage.getItem('packer_history') || '[]');
+    } catch { return []; }
+}
+
+function saveHistory() {
+    const history = getHistory();
+    const now = new Date().toLocaleString();
+    
+    // 构建新记录
+    const newRecord = {
+        name: currentProjectName,
+        time: now,
+        count: globalFiles.length,
+        tokenEst: document.getElementById('tokenVal').innerText
+    };
+
+    // 移除同名旧记录 (如果想把最新的顶上来)
+    const existingIndex = history.findIndex(h => h.name === newRecord.name);
+    if (existingIndex > -1) {
+        history.splice(existingIndex, 1);
+    }
+
+    // 插入头部
+    history.unshift(newRecord);
+    
+    // 截断
+    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+
+    localStorage.setItem('packer_history', JSON.stringify(history));
+    
+    renderHistory();
+}
+
+function renderHistory() {
+    const history = getHistory();
+    const panel = document.getElementById('historyPanel');
+    const list = document.getElementById('historyList');
+    
+    if (history.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'block';
+    list.innerHTML = '';
+    
+    history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.style.justifyContent = 'space-between';
+        div.style.cursor = 'default';
+        div.innerHTML = `
+            <div>
+                <span style="color:var(--accent-primary); font-weight:bold;">${item.name}</span>
+                <span style="font-size:0.8em; opacity:0.6; margin-left:8px;">${item.time}</span>
+            </div>
+            <div style="font-size:0.8em; opacity:0.8;">
+                ${item.count} Files | ${item.tokenEst} Tokens
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function clearHistory() {
+    if(confirm("确定清空所有历史记录吗？")) {
+        localStorage.removeItem('packer_history');
+        renderHistory();
+        showToast("历史记录已清空", "success");
     }
 }

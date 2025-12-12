@@ -115,6 +115,14 @@
             </div>
         </div>
 
+        <div id="historyPanel" class="panel-container" style="display: none; margin-bottom: 24px;">
+            <div class="panel-header">
+                <span class="panel-title">🕘 最近打包记录</span>
+                <button class="btn-xs" onclick="clearHistory()">清空</button>
+            </div>
+            <div id="historyList" class="file-list" style="max-height: 150px;"></div>
+        </div>
+
         <div id="dashboard" class="dashboard-grid" style="display: none;">
             <div class="stat-card">
                 <span class="stat-label">文件总数</span>
@@ -137,10 +145,12 @@
         <div id="fileListContainer" class="panel-container" style="display: none;">
             <div class="panel-header">
                 <span class="panel-title">包含的文件</span>
-                <button class="btn-xs" onclick="toggleAllFiles()">全选 / 反选</button>
+                <div style="display:flex; gap:10px;"> <button class="btn-xs" onclick="triggerAddExtra()">+ 添加文件</button> <button class="btn-xs" onclick="toggleAllFiles()">全选 / 反选</button>
+                </div>
             </div>
             <div id="fileList" class="file-list"></div>
         </div>
+        <input type="file" id="extraFileInput" multiple style="display:none">
         
         <div class="panel-container" id="previewContainer" style="display: none;">
             <div class="panel-header">
