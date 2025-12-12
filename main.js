@@ -162,28 +162,32 @@ document.getElementById('txtInput').addEventListener('change', async (e) => {
 });
 
 function copyPromptHint() {
-    const text = "请修改代码，并以 Project Packer 格式（包含 Project Structure 和 === File: path === 标记）输出完整的修改后文件内容，不要省略。";
+    // 使用反引号 ` (键盘 Esc 键下方) 来包裹多行文本
+    const text = `请修改代码，并严格按照 Project Packer 格式输出（包含 Project Structure 和 === File: path === 标记）。
+
+⚠️ 重要格式要求：
+1. 请直接输出【纯文本 (Raw Text)】，严禁将代码包裹在 JSON 字符串或对其进行转义处理。
+2. 不要将换行符写成 \\n，不要将引号写成 \\"，请保留原始的代码换行和缩进。
+3. 确保输出完整，不要省略任何文件内容。`;
+
     navigator.clipboard.writeText(text);
     showToast("Prompt 已复制！", "success");
 }
-
 async function unpackToZip() {
     const content = document.getElementById('pasteArea').value;
     if (!content.trim()) { 
         showToast("内容为空，请先粘贴代码", "error"); 
-        return; 
+        return;
     }
 
     const btn = document.querySelector('.large-btn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<span class="status-icon">⏳</span> 解析中...';
-
     const zip = new JSZip();
     let fileCount = 0;
 
     // --- 核心解析逻辑 ---
     const markerRegex = /(?:\r?\n|^)=== File: (.*?) ===(?:\r?\n|$)/g;
-    
     let match;
     let matches = [];
 
@@ -201,17 +205,45 @@ async function unpackToZip() {
         return;
     }
 
+    // ==========================================
+    // [新增] 1. 尝试提取项目根目录名
+    // ==========================================
+    let extractedName = "project_unpacked";
+    if (matches.length > 0) {
+        //以此判断：通常第一个文件的路径类似 "RootFolder/src/main.js"
+        const firstPath = matches[0].path.replace(/\\/g, '/');
+        const parts = firstPath.split('/');
+        // 如果路径包含文件夹结构（parts长度>1），则取第一部分
+        if (parts.length > 1) {
+            extractedName = parts[0]; 
+        }
+    }
+
+    // ==========================================
+    // [新增] 2. 生成时间戳 (YYYYMMDD_HHMM)
+    // ==========================================
+    const now = new Date();
+    const timeStr = now.getFullYear() +
+                    String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') + "_" +
+                    String(now.getHours()).padStart(2, '0') +
+                    String(now.getMinutes()).padStart(2, '0');
+    
+    // 组合文件名
+    const zipFileName = `${extractedName}_${timeStr}.zip`;
+
+    // --- 遍历写入文件 ---
     for (let i = 0; i < matches.length; i++) {
         const current = matches[i];
         const next = matches[i + 1];
         const contentStart = current.endIndex;
         const contentEnd = next ? next.startIndex : content.length;
-
         let rawContent = content.substring(contentStart, contentEnd);
         let cleanPath = current.path.replace(/\\/g, '/').replace(/^(\.\/|\/)/, '');
 
         if (!cleanPath || cleanPath.endsWith('/')) continue;
-
+        
+        // 清理首尾空行
         rawContent = rawContent.replace(/^\s*[\r\n]/, '').replace(/[\r\n]\s*$/, '');
         zip.file(cleanPath, rawContent);
         fileCount++;
@@ -220,7 +252,8 @@ async function unpackToZip() {
     if (fileCount > 0) {
         try {
             const blob = await zip.generateAsync({type:"blob"});
-            saveAs(blob, "project_unpacked.zip");
+            // [修改] 使用动态生成的文件名
+            saveAs(blob, zipFileName);
             showToast(`成功还原 ${fileCount} 个文件`, "success");
         } catch (e) {
             console.error(e);
