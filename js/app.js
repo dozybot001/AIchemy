@@ -159,6 +159,13 @@ function setupNativeInputs() {
         }
         e.target.value = '';
     });
+    document.getElementById('txtInput').addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+            handleInflateUpload(files[0]);
+        }
+        e.target.value = ''; 
+    });
 }
 
 function doFlatten() {
