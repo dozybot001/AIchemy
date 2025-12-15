@@ -1,27 +1,16 @@
-/**
- * View Layer (The Face)
- * Handles DOM manipulation, event listeners, UI feedback, and calling Core logic.
- */
-
-// --- GLOBAL STATE ---
 const PROCESSOR = new ProjectProcessor();
 
 const STATE = {
     globalFiles: [],
     finalOutput: "",
-    currentProjectName: "code_press_context",
+    currentProjectName: "code_flatten_context",
     readmeLoaded: false
 };
 
-// --- INITIALIZATION ---
-
 document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop();
-    // Native File Input Handler
     setupNativeInputs();
 });
-
-// --- UI INTERACTIONS & EVENT LISTENERS ---
 
 function setupDragAndDrop() {
     const packZone = document.getElementById('packZone');
@@ -38,7 +27,6 @@ function setupDragAndDrop() {
         });
     });
 
-    // Pack Zone Drop (Folder scanning)
     packZone.addEventListener('drop', async (e) => {
         e.preventDefault();
         packZone.classList.remove('drag-active');
@@ -55,7 +43,6 @@ function setupDragAndDrop() {
             const entries = [];
             for (let i = 0; i < items.length; i++) {
                 try {
-                    // Check capability first
                     if (typeof items[i].webkitGetAsEntry === 'function') {
                         const ent = items[i].webkitGetAsEntry();
                         if(ent) entries.push(ent);
@@ -71,9 +58,7 @@ function setupDragAndDrop() {
 
             STATE.globalFiles = [];
             const encoding = getEncodingFromDOM();
-            // Call Core Logic
             const scannedFiles = await scanFiles(entries, PROCESSOR, encoding);
-            
             await minWait;
 
             STATE.globalFiles = scannedFiles;
@@ -91,7 +76,6 @@ function setupDragAndDrop() {
         }
     });
 
-    // Inflate Zone Drop (Txt file)
     inflateZone.addEventListener('drop', async (e) => {
         e.preventDefault();
         inflateZone.classList.remove('drag-active');
@@ -118,7 +102,6 @@ function setupNativeInputs() {
             if (firstPath) STATE.currentProjectName = firstPath.split('/')[0];
         }
     
-        // Check for .gitignore (Manual finding since Flat FileList)
         const gitIgnoreFile = files.find(f => f.name === '.gitignore' && (f.webkitRelativePath.split('/').length === 2));
         if (gitIgnoreFile) {
             const text = await readFileAsText(gitIgnoreFile, encoding);
@@ -129,14 +112,12 @@ function setupNativeInputs() {
         for (const file of files) {
             const path = file.webkitRelativePath || file.name;
             if (PROCESSOR.shouldIgnore(path)) continue;
-            // Call Core Logic
             const res = await processSingleFile(file, path, PROCESSOR, encoding);
             if (res) processedList.push(res);
         }
     
         await minWait;
         STATE.globalFiles = processedList;
-    
         if (STATE.globalFiles.length === 0) {
             showToast('未找到有效代码文件 (全部被过滤)', 'error');
             showLoading(false);
@@ -148,7 +129,6 @@ function setupNativeInputs() {
         showLoading(false);
     });
 
-    // Extra File Input
     document.getElementById('extraFileInput').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -160,7 +140,6 @@ function setupNativeInputs() {
             const existIndex = STATE.globalFiles.findIndex(f => f.path === path);
             if (existIndex > -1) STATE.globalFiles.splice(existIndex, 1);
             try {
-                // Call Core Logic
                 const res = await processSingleFile(file, path, PROCESSOR, encoding);
                 if (res) {
                     STATE.globalFiles.push(res);
@@ -173,7 +152,7 @@ function setupNativeInputs() {
             renderFileTree();
             updateCapsuleStats();
             showToast(`已追加 ${addedCount} 个文件`, "success");
-            if (STATE.currentProjectName === "code_press_context" && files.length > 0) {
+            if (STATE.currentProjectName === "code_flatten_context" && files.length > 0) {
                  STATE.currentProjectName = "Mixed_Files";
             }
             resetResultsArea();
@@ -181,8 +160,6 @@ function setupNativeInputs() {
         e.target.value = '';
     });
 }
-
-// --- DOM ACTIONS ---
 
 function doFlatten() {
     const activeFiles = STATE.globalFiles.filter(f => f.selected);
@@ -196,7 +173,6 @@ function doFlatten() {
     
     setTimeout(async () => {
         const paths = activeFiles.map(f => f.path);
-        // Call Core Logic
         let result = "Project Structure:\n" + PROCESSOR.generateTree(paths) + "\n\n================================================\n\n";
         
         activeFiles.forEach(f => {
@@ -228,17 +204,13 @@ async function inflateToZip() {
     const btn = document.querySelector('#inflateSection .large-btn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<span class="status-icon">⏳</span> 正在熔铸...';
-
     try {
-        // Call Core Logic to get the Blob
         const { blob, fileCount, extractedName } = await PROCESSOR.restoreFilesFromText(content);
-        
         const timeStr = generateTimeStr(new Date());
         const zipFileName = `${extractedName}_${timeStr}.zip`;
 
         saveAs(blob, zipFileName);
         showToast(`成功还原 ${fileCount} 个文件`, "success");
-
     } catch (e) {
         console.error(e);
         showToast("Zip 生成失败: " + e.message, "error");
@@ -246,8 +218,6 @@ async function inflateToZip() {
         btn.innerHTML = originalText;
     }
 }
-
-// --- VIEW HELPERS ---
 
 function getEncodingFromDOM() {
     return document.getElementById('encodingSelect') ? document.getElementById('encodingSelect').value : 'UTF-8';
@@ -270,6 +240,7 @@ function renderFileTree() {
                 currentLevel = currentLevel[part]._children;
              }
         });
+    
     });
     Object.keys(treeRoot).forEach(key => {
         const rootNode = treeRoot[key];
@@ -286,7 +257,8 @@ function createTreeNode(node) {
         div.innerHTML = `
             <span class="leaf-icon">📄</span>
             <span class="leaf-name">${node._name}</span>
-            ${!fileData.selected ? '' : '<span class="status-dot"></span>'}
+            ${!fileData.selected ?
+            '' : '<span class="status-dot"></span>'}
         `;
         div.onclick = () => toggleFileSelection(node._index, div);
         return div;
@@ -387,8 +359,6 @@ function switchTab(tab) {
     }
 }
 
-// --- UTILITIES & FEEDBACK ---
-
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
     if (show) overlay.classList.remove('hidden');
@@ -400,7 +370,7 @@ function showToast(msg, type = 'normal') {
     const el = document.createElement('div');
     el.className = `toast ${type}`;
     el.innerHTML = type === 'success' ?
-        `<span>✅</span> ${msg}` : (type === 'error' ? `<span>⚠️</span> ${msg}` : msg);
+    `<span>✅</span> ${msg}` : (type === 'error' ? `<span>⚠️</span> ${msg}` : msg);
     
     container.appendChild(el);
     setTimeout(() => {
@@ -514,7 +484,6 @@ async function copyToClipboard() {
     const btn = document.querySelector('#previewContainer .tool-btn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<span class="btn-icon">⏳</span>复制中...';
-
     await new Promise(r => setTimeout(r, 100));
     try {
         await navigator.clipboard.writeText(STATE.finalOutput);

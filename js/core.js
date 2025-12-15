@@ -1,23 +1,14 @@
-/**
- * Core Logic Layer (The Brain)
- * Handles file processing, tree generation, token estimation, and Zip logic.
- * Contains NO DOM manipulation (pure logic only).
- */
-
 class ProjectProcessor {
     constructor() {
-        // config is loaded from global APP_CONFIG
         this.config = APP_CONFIG;
         this.gitIgnoreRules = [];
     }
 
-    // Security Optimization: Improved .gitignore parsing
     parseGitIgnore(content) {
         this.gitIgnoreRules = content.split('\n')
             .map(line => line.trim())
             .filter(line => line && !line.startsWith('#'))
             .map(rule => {
-                // Logic Fix: Even without trailing slash, it might be a dir, but we mark explicit ones
                 const isDir = rule.endsWith('/');
                 const clean = rule.replace(/\/$/, '');
                 return { rule: clean, isDir }; 
@@ -28,19 +19,15 @@ class ProjectProcessor {
         path = path.replace(/\\/g, '/');
         const parts = path.split('/');
         const fileName = parts[parts.length - 1];
-        
-        // 1. Hardcoded Checks
         if (parts.some(p => this.config.IGNORE_DIRS.includes(p))) return true;
         if (this.config.IGNORE_EXTS.some(ext => fileName.toLowerCase().endsWith(ext))) return true;
 
-        // 2. Advanced GitIgnore Logic
         if (this.gitIgnoreRules.length > 0) {
             for (const { rule, isDir } of this.gitIgnoreRules) {
-                // If parts array contains the rule, treat it as a directory ignore (e.g. node_modules)
                 if (parts.includes(rule)) return true;
-                // Fix 1: Multi-level path support
                 if (rule.includes('/')) {
-                    const normalizedRule = rule.startsWith('/') ? rule.slice(1) : rule;
+                    const normalizedRule = rule.startsWith('/') ?
+                        rule.slice(1) : rule;
                     if (path === normalizedRule || 
                         path.startsWith(normalizedRule + '/') || 
                         path.includes('/' + normalizedRule + '/')) {
@@ -48,7 +35,6 @@ class ProjectProcessor {
                     }
                 }
 
-                // File rule: Exact match or simple wildcard
                 if (fileName === rule) return true;
                 if (rule.startsWith('*') && fileName.endsWith(rule.slice(1))) return true;
             }
@@ -57,11 +43,9 @@ class ProjectProcessor {
         return false;
     }
 
-    // Optimization: Mixed Token Algorithm
     estimateTokens(text) {
         const chinese = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
         const other = text.length - chinese;
-        // Chinese ~1.5, English/Code ~0.25 (approx 4 chars/token)
         return Math.ceil(chinese * 1.5 + other * 0.25);
     }
 
@@ -76,17 +60,14 @@ class ProjectProcessor {
                 let last = i === keys.length - 1;
                 let str = prefix + (last ? "└── " : "├── ") + key + "\n";
                 if (Object.keys(node[key]).length) str += print(node[key], prefix + (last ? "    " : "│   "));
+        
                 return str;
             }).join('');
         };
         return Object.keys(tree).length ? (paths.length > 1 ? "Root/\n" : "") + print(tree) : "";
     }
 
-    /**
-     * Parse text content and generate a ZIP file (Inflate Logic).
-     * Returns a Promise that resolves to the Zip Blob.
-     */
-    async restoreFilesFromText(content, originalName = "code_restored") {
+    async restoreFilesFromText(content, originalName = "code_flatten_restored") {
         const markerRegex = /(?:^|\r?\n)[=-]{3,}\s*File:\s*(.*?)\s*[=-]{3,}(?:\r?\n|$)/g;
         const zip = new JSZip();
         let fileCount = 0;
@@ -116,19 +97,17 @@ class ProjectProcessor {
             const current = matches[i];
             const next = matches[i + 1];
             const contentStart = current.endIndex;
-            // Determine end of content based on next match start
-            const contentEnd = next ? next.startIndex : content.length;
+            const contentEnd = next ?
+                next.startIndex : content.length;
             
             let rawContent = content.substring(contentStart, contentEnd);
             
-            // Security: Sanitize Paths
             let cleanPath = current.path
                 .replace(/\\/g, '/')
-                .replace(/^(\.\/|\/)+/, '') // Remove leading ./ or /
-                .replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '$1$2'); // Smart remove .. 
+                .replace(/^(\.\/|\/)+/, '')
+                .replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '$1$2');
 
             if (!cleanPath || cleanPath.endsWith('/')) continue;
-            // Trim leading newline from the extraction if present
             rawContent = rawContent.replace(/^\s*[\r\n]/, '').replace(/[\r\n]\s*$/, '');
             zip.file(cleanPath, rawContent);
             fileCount++;
@@ -143,8 +122,6 @@ class ProjectProcessor {
     }
 }
 
-// --- Independent Helper Functions (Logic Only) ---
-
 function generateTimeStr(date) {
     return date.getFullYear() +
            String(date.getMonth() + 1).padStart(2, '0') +
@@ -153,7 +130,6 @@ function generateTimeStr(date) {
            String(date.getMinutes()).padStart(2, '0');
 }
 
-// Pure function wrapper for file scanning
 async function scanFiles(entries, processorInstance, encoding = 'UTF-8', pathPrefix = "") {
     let results = [];
     for (const entry of entries) {
@@ -163,11 +139,11 @@ async function scanFiles(entries, processorInstance, encoding = 'UTF-8', pathPre
         if (entry.isFile) {
             if (processorInstance.shouldIgnore(fullPath)) continue;
             try {
-                // We need to get the File object from FileEntry
                 const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
                 const processed = await processSingleFile(file, fullPath, processorInstance, encoding);
                 if (processed) results.push(processed);
-            } catch (err) { console.warn(`Error reading ${fullPath}`, err); }
+            } catch (err) { console.warn(`Error reading ${fullPath}`, err);
+            }
         } else if (entry.isDirectory) {
             if (processorInstance.shouldIgnore(fullPath)) continue;
             const dirReader = entry.createReader();
@@ -182,7 +158,6 @@ async function scanFiles(entries, processorInstance, encoding = 'UTF-8', pathPre
 }
 
 async function processSingleFile(file, path, processorInstance, encoding = 'UTF-8') {
-    // Stability: OOM Protection for large files
     if (file.size > processorInstance.config.MAX_FILE_SIZE) {
         return { 
             file, path, 
@@ -191,11 +166,10 @@ async function processSingleFile(file, path, processorInstance, encoding = 'UTF-
         };
     }
 
-    // Security: Check for .gitignore in root
     if (file.name === '.gitignore') {
         const text = await readFileAsText(file, encoding);
         processorInstance.parseGitIgnore(text);
-        return null; // Don't add .gitignore to output
+        return null; 
     }
 
     try {
@@ -207,7 +181,6 @@ async function processSingleFile(file, path, processorInstance, encoding = 'UTF-
     }
 }
 
-// Optimization 2.A: Support Encoding Selection (Now Pure with Argument)
 function readFileAsText(file, encoding = 'UTF-8') {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
