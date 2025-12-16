@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Flatten</title>
+    <title>Code Flatten & Prompt Amplifier</title>
     
-    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="global/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
     
@@ -35,192 +35,254 @@
         <span class="bookmark-arrow">➜</span>
     </div>
 
-    <div id="toast-container"></div>
-
-    <div class="container" id="mainContainer">
-        
-        <header>
-            <div class="header-row">
-                <div class="logo-area">
-                    <div class="logo-wrapper">
-                        <h1>Code Flatten</h1>
-                        <span class="silver-tag">For AI Context</span>
-                    </div>
-                </div>
-                
-                <div class="header-links">
-                    <a href="https://github.com/dozybot001/code_flatten" target="_blank" class="nav-icon-btn" aria-label="GitHub">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    </a>
-                    <a href="https://dozybot001.github.io/2025/10/25/5_S/" target="_blank" class="nav-text-btn">Blog</a>
-                </div>
-            </div>
-
-            <div class="subtitle">将立体项目<strong>“压扁”</strong>成 AI 上下文，或将生成文本<strong>“重构”</strong>为项目代码。<span class="btn-suffix">Flatten & Inflate.</span></div>
-            
-            <div class="hero-box">
-                <div class="hero-content">
-                    <div class="hero-features">
-                        <div class="feature-tag orange"><span class="f-icon">🌲</span> 结构映射<span class="btn-suffix">Tree Mapping</span></div>
-                        <div class="feature-tag blue"><span class="f-icon">💊</span> 语境胶囊<span class="btn-suffix">Context Capsule</span></div>
-                        <div class="feature-tag green"><span class="f-icon">⚡</span> 无损还原<span class="btn-suffix">Lossless Inflate</span></div>
-                        <div class="feature-tag secondary"><span class="f-icon">🛡️</span> 隐私安全<span class="btn-suffix">Privacy First</span></div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('pack')">
-                <span class="tab-icon">🥞</span> 压扁<span class="btn-suffix">Flatten</span>
-            </button>
-            <button class="tab-btn" onclick="switchTab('inflate')">
-                <span class="tab-icon">🏗️</span> 重构<span class="btn-suffix">Inflate</span>
-            </button>
-            <div class="tab-indicator"></div>
+    <div id="rightNavContainer">
+        <div class="nav-bookmark" onclick="switchMainView('amplifier')" id="bm-amplifier">
+            <span class="bookmark-arrow">➜</span>
+            <span class="bookmark-text">Prompt Amplifier</span>
+            <span class="bookmark-icon">🚀</span>
         </div>
-
-        <div id="packSection" class="section-content active">
-            
-            <div class="upload-zone unified-height-upload" id="packZone">
-                <div class="zone-content">
-                    <div class="icon-circle">
-                        <span class="icon-folder">📂</span>
-                    </div>
-                    <div class="zone-text">
-                        <h3>点击或拖拽项目文件夹</h3>
-                        <p>提取目录树与代码，生成 AI 语境快照</p>
-                    </div>
-                    <div class="zone-tags">
-                        <span>Flutter</span><span>Vue</span><span>React</span><span>Python</span><span>Any Code</span>
-                    </div>
-                </div>
-                <input type="file" id="fileInput" webkitdirectory directory multiple>
-            </div>
-
-            <div class="split-layout unified-height-main">
-                <div class="stats-card">
-                    <div class="stats-icon-footer">📊</div>
-                    <div class="stats-content-wrapper">
-                        <div class="stat-unit-v">
-                            <span class="s-label">Files</span>
-                            <span class="s-value" id="fileCountVal">0</span>
-                        </div>
-                        <div class="stat-divider-h"></div>
-                        <div class="stat-unit-v">
-                            <span class="s-label">Tokens</span>
-                            <span class="s-value" id="tokenVal">0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-column full-height-col">
-                    <div id="fileListContainer" class="panel-container full-height-panel">
-                        <div class="panel-header">
-                            <span class="panel-title">已选文件 <span class="btn-suffix">Tree view</span></span>
-                            <div class="panel-tools"> 
-                                <select id="encodingSelect" class="tool-select" title="选择文件编码">
-                                    <option value="UTF-8" selected>UTF-8</option>
-                                    <option value="GBK">GBK</option>
-                                </select>
-                                <button class="tool-btn" onclick="copyTreeOnly()">🌳 仅复制树<span class="btn-suffix">tree</span></button>
-                                <button class="tool-btn" onclick="triggerAddExtra()">➕ 补充文件<span class="btn-suffix">supply</span></button>
-                                <button class="tool-btn" onclick="toggleAllFiles()">☑️ 全选/反选<span class="btn-suffix">select</span></button>
-                            </div>
-                        </div>
-                        <div id="fileTree" class="tree-container scrollable-tree">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="action-bar-center mb-24">
-                <button class="btn btn-primary large-btn" onclick="doFlatten()">
-                    <span class="btn-icon">🥞</span> 压扁 <span class="btn-suffix">Flatten</span>
-                </button>
-                <button class="btn btn-primary" onclick="downloadFile()">
-                    <span class="btn-icon">⬇️</span> 下载 <span class="btn-suffix">Download</span>
-                </button>
-            </div>
-
-            <input type="file" id="extraFileInput" multiple style="display:none">
-
-            <div class="panel-container unified-height-preview" id="previewContainer">
-                <div class="panel-header">
-                    <span class="panel-title">👁️ 文本预览<span class="btn-suffix">Top 3000 chars</span></span>
-                    <button class="tool-btn" onclick="copyToClipboard()"><span class="btn-icon">📋</span>复制<span class="btn-suffix">Copy</span></button>
-                </div>
-                <div class="code-editor-look">
-                    <pre id="previewArea" placeholder="// 等待处理..."></pre>
-                </div>
-            </div>
-
-            <div class="guide-box unified-height-prompt">
-                <div class="guide-content">
-                    <span class="panel-title">💡 点击复制提示词<span class="btn-suffix">Prompt</span></span>
-                    <div class="code-snippet" onclick="copyPromptHint()"><span id="promptText">请理解 txt 文件内的项目结构与代码。按照以下要求修改 txt 文本，将修改后的**完整**文本内容包裹在 txt 代码块中输出：
-
-修改要求：
-1...
-                        
-txt 文本格式要求：
-1. txt 文本头部展示 Project Structure (目录树)
-2. 每个文件内容前必须包含标记：=== File: path/to/file.ext ===
-</span></div>
-                </div>
-            </div>
-
-        </div>
-
-        <div id="inflateSection" class="section-content">
-            
-            <div class="upload-zone dashed-zone unified-height-upload" id="inflateZone">
-                <div class="zone-content">
-                    <div class="icon-circle secondary">
-                        <span class="icon-folder">📄</span>
-                    </div>
-                    <div class="zone-text">
-                        <h3>上传或拖入 AI 生成的文本文件</h3>
-                        <p>支持 .txt, .md 或直接粘贴</p>
-                    </div>
-                </div>
-                <input type="file" id="txtInput" accept=".txt, .md">
-            </div>
-            
-            <div class="panel-container mb-24 unified-height-preview">
-                <div class="panel-header">
-                    <div class="title-group">
-                        <span class="panel-title">📄 粘贴文本<span class="btn-suffix">Paste Here</span></span>
-                    </div>
-                    <div class="panel-tools">
-                        <button class="tool-btn" onclick="document.getElementById('txtInput').click()" title="上传文件">
-                            <span class="btn-icon">📂</span>导入 TXT<span class="btn-suffix">upload</span>
-                        </button>
-                        <button class="tool-btn" onclick="cleanEscapedText()" title="自动修复乱码">
-                            <span class="btn-icon">🧹</span>修复格式<span class="btn-suffix">fix</span>
-                        </button>
-                        <button class="tool-btn" onclick="clearPasteArea()" title="清空内容">
-                            <span class="btn-icon">🗑️</span>清空内容<span class="btn-suffix">clear</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="editor-wrapper full-height-col">
-                    <textarea id="pasteArea" placeholder="// 请在此粘贴 AI 生成的代码文本...&#10;// 格式示例：&#10;// === File: src/main.js ===&#10;// console.log('Hello');"></textarea>
-                </div>
-            </div>
-
-            <div class="action-bar-center mb-24">
-                <button class="btn btn-primary large-btn" onclick="inflateToZip()">
-                    <span class="btn-icon">🏗️</span>重构<span class="btn-suffix">Inflate</span>
-                </button>
-            </div>
-            
+        <div class="nav-bookmark active" onclick="switchMainView('flatten')" id="bm-flatten">
+            <span class="bookmark-arrow">➜</span>
+            <span class="bookmark-text">Code Flatten</span>
+            <span class="bookmark-icon">🥞</span>
         </div>
     </div>
 
-    <script type="text/javascript" src="js/config.js"></script>
-    <script type="text/javascript" src="js/core.js"></script>
-    <script type="text/javascript" src="js/app.js"></script>
+    <div id="toast-container"></div>
+
+    <div id="viewSlider">
+        
+        <div class="page-section" id="page-amplifier">
+            <div class="container empty-frame">
+                <header>
+                    <div class="header-row">
+                        <div class="logo-area">
+                            <div class="logo-wrapper">
+                                <h1>Prompt Amplifier</h1>
+                                <span class="silver-tag">AI Enhancer</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subtitle">Optimize your prompts for <strong>Maximum</strong> reasoning capability.<span class="btn-suffix">Amplify & refine.</span></div>
+                </header>
+                
+                <div class="placeholder-content">
+                    <div class="icon-circle secondary">
+                        <span class="icon-folder">🚧</span>
+                    </div>
+                    <h3>Coming Soon</h3>
+                    <p>New tools are being built here.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-flatten">
+            <div class="container" id="mainContainer">
+                
+                <header>
+                    <div class="header-row">
+                        <div class="logo-area">
+                            <div class="logo-wrapper">
+                                <h1>Code Flatten</h1>
+                                <span class="silver-tag">For AI Context</span>
+                            </div>
+                        </div>
+                        
+                        <div class="header-links">
+                            <a href="https://github.com/dozybot001/code_flatten" target="_blank" class="nav-icon-btn" aria-label="GitHub">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            </a>
+                            <a href="https://dozybot001.github.io/2025/10/25/5_S/" target="_blank" class="nav-text-btn">Blog</a>
+                        </div>
+                    </div>
+
+                    <div class="subtitle">将立体项目<strong>“压扁”</strong>成 AI 上下文，或将生成文本<strong>“重构”</strong>为项目代码。<span class="btn-suffix">Flatten & Inflate.</span></div>
+                    
+                    <div class="hero-box">
+                        <div class="hero-content">
+                            <div class="hero-features">
+                                <div class="feature-tag orange"><span class="f-icon">🌲</span> 结构映射<span class="btn-suffix">Tree Mapping</span></div>
+                                <div class="feature-tag blue"><span class="f-icon">💊</span> 语境胶囊<span class="btn-suffix">Context Capsule</span></div>
+                                <div class="feature-tag green"><span class="f-icon">⚡</span> 无损还原<span class="btn-suffix">Lossless Inflate</span></div>
+                                <div class="feature-tag secondary"><span class="f-icon">🛡️</span> 隐私安全<span class="btn-suffix">Privacy First</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('pack')">
+                        <span class="tab-icon">🥞</span> 压扁<span class="btn-suffix">Flatten</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('inflate')">
+                        <span class="tab-icon">🏗️</span> 重构<span class="btn-suffix">Inflate</span>
+                    </button>
+                    <div class="tab-indicator"></div>
+                </div>
+
+                <div id="packSection" class="section-content active">
+                    
+                    <div class="upload-zone unified-height-upload" id="packZone">
+                        <div class="zone-content">
+                            <div class="icon-circle">
+                                <span class="icon-folder">📂</span>
+                            </div>
+                            <div class="zone-text">
+                                <h3>点击或拖拽项目文件夹</h3>
+                                <p>提取目录树与代码，生成 AI 语境快照</p>
+                            </div>
+                            <div class="zone-tags">
+                                <span>Flutter</span><span>Vue</span><span>React</span><span>Python</span><span>Any Code</span>
+                            </div>
+                        </div>
+                        <input type="file" id="fileInput" webkitdirectory directory multiple>
+                    </div>
+
+                    <div class="split-layout unified-height-main">
+                        <div class="stats-card">
+                            <div class="stats-icon-footer">📊</div>
+                            <div class="stats-content-wrapper">
+                                <div class="stat-unit-v">
+                                    <span class="s-label">Files</span>
+                                    <span class="s-value" id="fileCountVal">0</span>
+                                </div>
+                                <div class="stat-divider-h"></div>
+                                <div class="stat-unit-v">
+                                    <span class="s-label">Tokens</span>
+                                    <span class="s-value" id="tokenVal">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-column full-height-col">
+                            <div id="fileListContainer" class="panel-container full-height-panel">
+                                <div class="panel-header">
+                                    <span class="panel-title">已选文件 <span class="btn-suffix">Tree view</span></span>
+                                    <div class="panel-tools"> 
+                                        <select id="encodingSelect" class="tool-select" title="选择文件编码">
+                                            <option value="UTF-8" selected>UTF-8</option>
+                                            <option value="GBK">GBK</option>
+                                        </select>
+                                        <button class="tool-btn" onclick="copyTreeOnly()">🌳 仅复制树<span class="btn-suffix">tree</span></button>
+                                        <button class="tool-btn" onclick="triggerAddExtra()">➕ 补充文件<span class="btn-suffix">supply</span></button>
+                                        <button class="tool-btn" onclick="toggleAllFiles()">☑️ 全选/反选<span class="btn-suffix">select</span></button>
+                                    </div>
+                                </div>
+                                <div id="fileTree" class="tree-container scrollable-tree">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar-center mb-24">
+                        <button class="btn btn-primary large-btn" onclick="doFlatten()">
+                            <span class="btn-icon">🥞</span> 压扁 <span class="btn-suffix">Flatten</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadFile()">
+                            <span class="btn-icon">⬇️</span> 下载 <span class="btn-suffix">Download</span>
+                        </button>
+                    </div>
+
+                    <input type="file" id="extraFileInput" multiple style="display:none">
+
+                    <div class="panel-container unified-height-preview" id="previewContainer">
+                        <div class="panel-header">
+                            <span class="panel-title">👁️ 文本预览<span class="btn-suffix">Top 3000 chars</span></span>
+                            <button class="tool-btn" onclick="copyToClipboard()"><span class="btn-icon">📋</span>复制<span class="btn-suffix">Copy</span></button>
+                        </div>
+                        <div class="code-editor-look">
+                            <pre id="previewArea" placeholder="// 等待处理..."></pre>
+                        </div>
+                    </div>
+
+                    <div class="guide-box unified-height-prompt">
+                        <div class="guide-content">
+                            <span class="panel-title">💡 点击复制提示词<span class="btn-suffix">Prompt</span></span>
+                            <div class="code-snippet" onclick="copyPromptHint()"><span id="promptText"># Role
+你是一个代码重构引擎。你的任务是读取提供的 txt 文本理解项目结构与代码逻辑，并根据用户的修改要求生成一个新的项目快照。
+
+# Critical Output Rules (至关重要)
+1. **必须使用代码块**：你输出的所有内容（包含目录树和所有文件代码）必须**严格**包裹在一个 txt 代码块中（```txt ... ```）。
+2. **禁止渲染**：绝对不要在 txt 代码块之外输出任何项目内容。不要使用 Markdown 渲染文件路径（如不要加粗）。
+3. **格式完整性**：这是为了机器解析，请保持原始缩进和换行符，不要截断代码。
+
+# Format Template
+请完全遵循以下格式输出，不要改变分隔符样式，示例：
+
+```txt
+Project Structure:
+Root/
+└── ...
+
+================================================
+
+=== File: src/main.js ===
+// 这里是文件的完整代码...
+
+=== File: src/style.css ===
+/* 这里是文件的完整代码... */
+
+```
+# 修改要求：
+1. 
+</span></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="inflateSection" class="section-content">
+                    
+                    <div class="upload-zone dashed-zone unified-height-upload" id="inflateZone">
+                        <div class="zone-content">
+                            <div class="icon-circle secondary">
+                                <span class="icon-folder">📄</span>
+                            </div>
+                            <div class="zone-text">
+                                <h3>上传或拖入 AI 生成的文本文件</h3>
+                                <p>支持 .txt, .md 或直接粘贴</p>
+                            </div>
+                        </div>
+                        <input type="file" id="txtInput" accept=".txt, .md">
+                    </div>
+                    
+                    <div class="panel-container mb-24 unified-height-preview">
+                        <div class="panel-header">
+                            <div class="title-group">
+                                <span class="panel-title">📄 粘贴文本<span class="btn-suffix">Paste Here</span></span>
+                            </div>
+                            <div class="panel-tools">
+                                <button class="tool-btn" onclick="document.getElementById('txtInput').click()" title="上传文件">
+                                    <span class="btn-icon">📂</span>导入 TXT<span class="btn-suffix">upload</span>
+                                </button>
+                                <button class="tool-btn" onclick="cleanEscapedText()" title="自动修复乱码">
+                                    <span class="btn-icon">🧹</span>修复格式<span class="btn-suffix">fix</span>
+                                </button>
+                                <button class="tool-btn" onclick="clearPasteArea()" title="清空内容">
+                                    <span class="btn-icon">🗑️</span>清空内容<span class="btn-suffix">clear</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-wrapper full-height-col">
+                            <textarea id="pasteArea" placeholder="// 请在此粘贴 AI 生成的代码文本...&#10;// 格式示例：&#10;// === File: src/main.js ===&#10;// console.log('Hello');"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="action-bar-center mb-24">
+                        <button class="btn btn-primary large-btn" onclick="inflateToZip()">
+                            <span class="btn-icon">🏗️</span>重构<span class="btn-suffix">Inflate</span>
+                        </button>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="global/js/nav.js"></script>
+    <script type="text/javascript" src="code_flatten/js/config.js"></script>
+    <script type="text/javascript" src="code_flatten/js/core.js"></script>
+    <script type="text/javascript" src="code_flatten/js/app.js"></script>
 </body>
 </html>

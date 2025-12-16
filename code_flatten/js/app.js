@@ -6,16 +6,13 @@ const STATE = {
     currentProjectName: "code_flatten_context",
     readmeLoaded: false
 };
-
 document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop();
     setupNativeInputs();
 });
-
 function setupDragAndDrop() {
     const packZone = document.getElementById('packZone');
     const inflateZone = document.getElementById('inflateZone');
-
     [packZone, inflateZone].forEach(zone => {
         zone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -26,7 +23,6 @@ function setupDragAndDrop() {
             zone.classList.remove('drag-active');
         });
     });
-
     packZone.addEventListener('drop', async (e) => {
         e.preventDefault();
         packZone.classList.remove('drag-active');
@@ -128,7 +124,6 @@ function setupNativeInputs() {
         updateCapsuleStats(); 
         showLoading(false);
     });
-
     document.getElementById('extraFileInput').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -264,8 +259,7 @@ function createTreeNode(node) {
         div.innerHTML = `
             <span class="leaf-icon">📄</span>
             <span class="leaf-name">${node._name}</span>
-            ${!fileData.selected ?
-            '' : '<span class="status-dot"></span>'}
+            ${!fileData.selected ? '' : '<span class="status-dot"></span>'}
         `;
         div.onclick = () => toggleFileSelection(node._index, div);
         return div;

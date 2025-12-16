@@ -26,8 +26,7 @@ class ProjectProcessor {
             for (const { rule, isDir } of this.gitIgnoreRules) {
                 if (parts.includes(rule)) return true;
                 if (rule.includes('/')) {
-                    const normalizedRule = rule.startsWith('/') ?
-                        rule.slice(1) : rule;
+                    const normalizedRule = rule.startsWith('/') ? rule.slice(1) : rule;
                     if (path === normalizedRule || 
                         path.startsWith(normalizedRule + '/') || 
                         path.includes('/' + normalizedRule + '/')) {
@@ -99,14 +98,12 @@ class ProjectProcessor {
             const contentStart = current.endIndex;
             const contentEnd = next ?
                 next.startIndex : content.length;
-            
             let rawContent = content.substring(contentStart, contentEnd);
             
             let cleanPath = current.path
                 .replace(/\\/g, '/')
                 .replace(/^(\.\/|\/)+/, '')
                 .replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '$1$2');
-
             if (!cleanPath || cleanPath.endsWith('/')) continue;
             rawContent = rawContent.replace(/^\s*[\r\n]/, '').replace(/[\r\n]\s*$/, '');
             zip.file(cleanPath, rawContent);
