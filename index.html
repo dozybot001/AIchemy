@@ -1,192 +1,112 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AIchemy - Cast, Forge & Refine</title>
-<link rel="stylesheet" type="text/css" href="css/global.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIchemy</title>
+    <link rel="stylesheet" type="text/css" href="css/global.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="loadingOverlay" class="loading-overlay hidden"><div class="spinner"></div><div class="loading-text">Processing...</div></div>
-<div id="hiddenSidebar">
-    <div id="homeBookmark" class="nav-hidden" onclick="scrollToSection('welcome')"><span class="bookmark-text">🏠 HOME
-    </div>
-    <div id="guideBookmark" class="nav-hidden" onclick="toggleSidebar()"><span class="bookmark-text">📖 README</span>
-    </div>
-    <div class="sidebar-content">
-        <div id="readmeContent" class="markdown-body"><div class="loading-spinner">⏳ Loading README...</div></div>
-    </div>
-</div>
-<div id="rightNavContainer" class="nav-hidden">
-    <div class="nav-bookmark" onclick="scrollToSection('cast')" id="bm-cast"><span class="bookmark-text">Cast 🚀</span></div>
-    <div class="nav-bookmark" onclick="scrollToSection('forge')" id="bm-forge"><span class="bookmark-text">Forge ⚒️</span></div>
-    <div class="nav-bookmark" onclick="scrollToSection('refine')" id="bm-refine"><span class="bookmark-text">Refine ✨</span></div>
-</div>
-<div id="toast-container"></div>
-<div id="viewSlider">
-    <div class="page-section" id="page-welcome">
-        <div class="welcome-container">
-            <div class="welcome-logo"><div class="logo-wrapper large"><h1>AIchemy</h1></div></div>
-            <div class="welcome-slogan">Smelt Context. Remold Code.</div>
-        </div>
-    </div>
-    <div class="page-section" id="page-cast">
-        <div class="container empty-frame">
-            <header>
-                <div class="header-row"><div class="logo-area"><div class="logo-wrapper"><h1>Cast</h1></div></div></div>
-            </header>
-            <div class="placeholder-content"><div class="icon-circle secondary"><span class="icon-folder">🚧</span></div><h3>Coming Soon</h3><p>New tools are being built here.</p></div>
-        </div>
-    </div>
-    <div class="page-section" id="page-forge">
-        <div class="container" id="mainContainer">
-            <header>
-                <div class="header-row">
-                    <div class="logo-area"><div class="logo-wrapper"><h1>Forge</h1></div></div>
-                    <div class="header-links">
-                        <a href="https://github.com/dozybot001/AIchemy" target="_blank" class="nav-text-btn">Github</a>
-                        <a href="https://dozybot001.github.io/2025/10/25/5_S/" target="_blank" class="nav-text-btn">Blog</a>
-                    </div>
-                </div>
-            </header>
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('smelt')">🔥 熔炼</button>
-                <button class="tab-btn" onclick="switchTab('remold')">🏗️ 重塑</button>
-                <div class="tab-indicator"></div>
-            </div>
-            <div id="smeltSection" class="section-content active">
-                <div class="upload-zone unified-height-upload" id="packZone">
-                    <div class="zone-content">
-                        <div class="icon-circle"><span class="icon-folder">📂</span></div>
-                        <div class="zone-text"><h3>点击或拖拽项目文件夹</h3><p>提取目录树与代码，生成 AI 语境快照</p></div>
-                        <div class="zone-tags"><span>Flutter</span><span>Vue</span><span>React</span><span>Python</span><span>Any Code</span></div>
-                    </div>
-                    <input type="file" id="fileInput" webkitdirectory directory multiple>
-                </div>
-                <div class="split-layout unified-height-main">
-                    <div class="stats-card">
-                        <div class="stats-icon-footer">📊</div>
-                        <div class="stats-content-wrapper">
-                            <div class="stat-unit-v"><span class="s-label">Files</span><span class="s-value" id="fileCountVal">0</span></div>
-                            <div class="stat-divider-h"></div>
-                            <div class="stat-unit-v"><span class="s-label">Tokens</span><span class="s-value" id="tokenVal">0</span></div>
-                       </div>
-                    </div>
-                    <div class="content-column full-height-col">
-                        <div id="fileListContainer" class="panel-container full-height-panel">
-                            <div class="panel-header">
-                                <span class="panel-title">已选文件</span>
-                                <div class="panel-tools">
-                                    <button class="tool-btn" onclick="copyTreeOnly()">🌳 仅复制树</button>
-                                    <button class="tool-btn" onclick="triggerAddExtra()">➕ 补充</button>
-                                    <button class="tool-btn" onclick="toggleAllFiles()">☑️ 全选</button>
-                                    <button class="tool-btn" onclick="clearFileTree()">🗑️ 清空</button>
-                                </div>
-                            </div>
-                            <div id="fileTree" class="tree-container scrollable-tree"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="action-bar-center mb-24">
-                    <button class="btn btn-primary large-btn" onclick="doSmelt()">🔥 熔炼</button>
-                </div>
-                <input type="file" id="extraFileInput" multiple style="display:none">
-                <div class="panel-container unified-height-preview" id="previewContainer">
-                    <div class="panel-header">
-                        <span class="panel-title">👁️ 文本预览</span>
-                        <div class="panel-tools">
-                            <button class="tool-btn" onclick="copyToClipboard()">📋 复制</button>
-                            <button class="tool-btn" onclick="downloadFile()">⬇️ 下载</button>
-                            <button class="tool-btn" onclick="resetResultsArea()">🗑️ 清空</button>
-                        </div>
-                    </div>
-                    <div class="code-editor-look"><pre id="previewArea" placeholder="// 等待处理..."></pre></div>
-                </div>
-                <div class="guide-box unified-height-prompt">
-                    <div class="guide-content">
-                        <span class="panel-title">💡 点击复制提示词<span class="btn-suffix">Prompt</span></span>
-                        <div class="code-snippet" onclick="copyPromptHint()"><span id="promptText" style="color: var(--text-tertiary);">⏳ 正在加载提示词模板...</span><span class="copy-hint">Click to Copy</span></div>
-                        <div class="guide-note">将此提示词配合上方生成的项目快照投喂给 AI。</div>
-                    </div>
-                </div>
-            </div>
-            <div id="remoldSection" class="section-content">
-                <div class="upload-zone dashed-zone unified-height-upload" id="inflateZone">
-                    <div class="zone-content">
-                        <div class="icon-circle secondary"><span class="icon-folder">📄</span></div>
-                        <div class="zone-text"><h3>上传或拖入 AI 生成的文本文件</h3><p>支持 .txt, .md 或直接粘贴</p></div>
-                    </div>
-                    <input type="file" id="txtInput" accept=".txt, .md">
-                </div>
-                <div class="panel-container mb-24 unified-height-preview">
-                    <div class="panel-header">
-                        <div class="title-group"><span class="panel-title">📄 粘贴文本</span></div>
-                        <div class="panel-tools">
-                            <button class="tool-btn" onclick="clearPasteArea()">🗑️ 清空内容</button>
-                        </div>
-                    </div>
-                    <div class="editor-wrapper full-height-col"><textarea id="pasteArea" placeholder="// 请在此粘贴 AI 生成的代码文本..."></textarea></div>
-                </div>
-                <div class="action-bar-center mb-24">
-                    <button class="btn btn-primary large-btn" onclick="remoldToZip()">🏗️ 重塑</button>
-                </div>
+    <div id="toast-overlay"></div>
+    
+    <div class="layout-section">
+        <div class="hero-banner">
+            <h1>AIchemy</h1>
+            <div class="links">
+                <a href="https://github.com/dozybot001/AIchemy" 
+                class="ui-btn">GitHub</a>
+                <a href="https://dozybot001.github.io/2025/10/25/5_S/" class="ui-btn">Blog</a>
             </div>
         </div>
     </div>
-    <div class="page-section" id="page-refine">
-        <div class="container wide-view vertical-layout">
-            <header style="margin-bottom: 24px;">
-                <div class="header-row"><div class="logo-area"><div class="logo-wrapper"><h1>Refine</h1></div></div></div>
-            </header>
-            <div class="refine-input-row">
-                <div class="refine-card input-card">
-                    <div class="panel-header">
-                        <span class="panel-title">粘贴补丁</span>
-                        <div class="panel-tools"><button class="tool-btn" onclick="RefineModule.clearPatch()">🗑️ 清空</button></div>
+
+    <div class="layout-section">
+        <div class="app-workspace">
+            <input type="file" id="input-upload-directory" webkitdirectory directory multiple style="display:none">
+            <input type="file" id="input-upload-files" multiple style="display:none">
+
+          
+            <div class="ui-card">
+                <div class="ui-card__header">
+                    <h2>项目文件</h2>
+                    <div class="ui-stat-group">
+                        Files <span class="ui-stat-value" id="display-file-count">0</span>
+            
+                        Tokens <span class="ui-stat-value" id="display-token-estimator">0</span>
                     </div>
-                    <div class="editor-wrapper"><textarea id="patchInput" placeholder="// 在此粘贴 AI 返回的 SEARCH/REPLACE 格式文本..."></textarea></div>
-                </div>
-                <div class="refine-card action-card">
-                    <div class="panel-header"><span class="panel-title">基准文本</span></div>
-                    <div class="base-upload-area" id="baseZone" onclick="document.getElementById('refineBaseInput').click()">
-                        <div class="icon-circle secondary" id="baseIconWrapper"><span class="icon-folder">📂</span></div>
-                        <div class="zone-text"><h3 id="baseMainText">点击加载 Forge 上下文</h3><p id="baseSubText">上传 .txt 文件</p></div>
-                        <input type="file" id="refineBaseInput" accept=".txt,.md">
+                    <div class="ui-toolbar">
+                        <button class="ui-btn" id="action-import-dir">上传项目</button>
+                 
+                        <button class="ui-btn" id="action-copy-structure">复制树</button>
+                        <button class="ui-btn" id="action-append-files">补充</button>
+                        <button class="ui-btn" id="action-select-all">全选</button>
+                        <button class="ui-btn" id="action-merge-content">合并</button> <button class="ui-btn" id="action-reset-workspace">🗑️</button>
+          
                     </div>
-                    <div class="analyze-action"><button class="btn btn-secondary full-width-btn" onclick="RefineModule.analyzeOnly()">⚡ 分析</button></div>
                 </div>
+                <textarea class="ui-editor-area" id="viewer-file-tree"></textarea>
             </div>
-            <div class="refine-footer" style="margin-bottom: 24px;">
-                <button class="btn btn-primary large-btn" onclick="RefineModule.downloadResult()">🏗️ 重塑</button>
-            </div>
-            <div class="refine-diff-row">
-                <div class="panel-container full-height-panel">
-                    <div class="panel-header">
-                        <span class="panel-title">变更预览</span>
-                        <div class="panel-tools"><button class="tool-btn" onclick="RefineModule.clearDiff()">🗑️ 清空</button></div>
+
+            <div class="ui-card">
+                <div class="ui-card__header">
+             
+                    <h2>文本预览</h2>
+                    <div class="ui-toolbar">
+                        <button class="ui-btn" id="action-copy-result">复制</button>
+                        <button class="ui-btn" id="action-download-text">下载</button>
+                    
+                        <button class="ui-btn" id="action-clear-result">🗑️</button>
                     </div>
-                    <div id="diffViewer" class="code-editor-look diff-viewer-scroll"></div>
                 </div>
+                <textarea class="ui-editor-area" id="editor-merge-result" readonly></textarea>
             </div>
-            <div class="guide-box unified-height-prompt">
-                <div class="guide-content">
-                    <span class="panel-title">💡 点击复制 Refine 提示词</span>
-                    <div class="code-snippet" onclick="RefineModule.copyRefinePrompt()"><span id="refinePromptText" style="color: var(--text-tertiary);">⏳ 正在加载 Refine 提示词...</span><span class="copy-hint">Click to Copy</span></div>
-                    <div class="guide-note">将此格式要求发送给 AI，以生成兼容的 Patch 补丁。</div>
+
+            <div class="ui-card">
+                <div class="ui-card__header">
+                    <h2>粘贴补丁</h2>
+                    <div class="ui-toolbar">
+                        <button class="ui-btn" id="action-preview-patch" style="background:var(--accent-glow); color:var(--accent-primary)">预览变更</button>
+                        <button class="ui-btn" id="action-clear-patch">🗑️</button>
+                    </div>
                 </div>
+                <textarea class="ui-editor-area" id="input-patch-source"></textarea>
+            </div>
+            
+            <div class="ui-card">
+                <div class="ui-card__header">
+                   
+                    <h2>变更预览</h2>
+                    <div class="ui-toolbar">
+                        <button class="ui-btn" id="action-apply-patch">应用变更</button>
+                        <button class="ui-btn" id="action-clear-diff">🗑️</button>
+                    </div>
+      
+                </div>
+                <div class="ui-editor-area" id="viewer-diff-result" style="overflow-y: auto; white-space: pre-wrap; color: var(--text-secondary);"></div>
+            </div>
+
+            <div class="ui-card">
+                <div class="ui-card__header">
+                    <h2>手动还原</h2>
+         
+                    <div class="ui-toolbar">
+                        <button class="ui-btn" id="action-export-zip">打包下载</button> <button class="ui-btn" id="btnClearRestore">🗑️</button>
+                    </div>
+                </div>
+                <textarea class="ui-editor-area" id="input-restore-source"></textarea>
+    
             </div>
         </div>
     </div>
-</div>
-<script type="text/javascript" src="js/global.js"></script>
-<script type="text/javascript" src="js/forge.js"></script>
-<script type="text/javascript" src="js/refine.js"></script>
-<script type="text/javascript" src="js/cast.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    
+    <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/utils.js"></script>
+    <script type="text/javascript" src="js/core.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
 </body>
 </html>
