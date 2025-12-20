@@ -27,27 +27,42 @@ const Utils = {
         return false;
     },
 
+    // 替换原有的 readFile 方法
     readFile: (file) => new Promise((resolve) => {
-        if (Utils.isBinary(file)) {
-            return resolve("<Binary File Omitted>");
-        }
-        if (file.size > 2 * 1024 * 1024) {
-            console.warn(`File too large: ${file.name}`);
-            return resolve("<File too large to process>");
-        }
+        // 1. 扩展名预检 (保持不变)
+        if (Utils.isBinary(file)) return resolve(UI_TEXT.toast.binaryOmitted);
 
+        // 2. 只有小文件才通过 text 读取，大文件先通过 slice 检查头
+        const CHUNK_SIZE = 1024;
+        const blob = file.slice(0, CHUNK_SIZE);
         const reader = new FileReader();
+
         reader.onload = (e) => {
-            const result = e.target.result;
-            const snippet = result.slice(0, 512);
-            if (snippet.includes('\u0000')) {
-                resolve("<Binary File Omitted>");
+            const arr = new Uint8Array(e.target.result);
+            // 检查是否存在 NULL 字节 (二进制特征)
+            let isBinaryContent = false;
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] === 0) {
+                    isBinaryContent = true;
+                    break;
+                }
+            }
+
+            if (isBinaryContent) {
+                resolve(UI_TEXT.toast.binaryOmitted);
             } else {
-                resolve(result);
+                // 安全：确认为文本后，再读取全文
+                if (file.size > 2 * 1024 * 1024) { 
+                    // 这里甚至可以做截断，只读前 2MB
+                    resolve(UI_TEXT.toast.fileTooLarge);
+                } else {
+                    const fullReader = new FileReader();
+                    fullReader.onload = (ev) => resolve(ev.target.result);
+                    fullReader.readAsText(file);
+                }
             }
         };
-        reader.onerror = () => resolve("");
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(blob); // 关键：先读为 ArrayBuffer 避免解码卡死
     }),
 
     estimateTokens: (text) => {

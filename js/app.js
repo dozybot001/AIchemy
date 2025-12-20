@@ -5,6 +5,7 @@
 const App = {
     init: async () => {
         App.cacheDOM(); // 填充 config.js 中的 UI 对象
+        App.renderStaticText();
         App.initPlaceholders(); 
         App.mountInteractiveTree();
         App.attachUploadHandlers();
@@ -12,13 +13,15 @@ const App = {
         await App.fetchDefaultIgnoreRules();
         
         window.addEventListener('beforeunload', (e) => {
-            if (STATE.files.length > 0) e.returnValue = "Sure?";
+            if (STATE.files.length > 0) e.returnValue = UI_TEXT.toast.beforeUnload;
         });
     },
 
     cacheDOM: () => {
+        UI.btns.switchLang = document.getElementById('action-switch-lang');
         UI.inputs.dir = document.getElementById('input-upload-directory');
         UI.inputs.file = document.getElementById('input-upload-files');
+        UI.inputs.baseline = document.getElementById('input-upload-baseline');
         
         UI.areas.treeViewer = document.getElementById('viewer-file-tree');
         UI.areas.preview = document.getElementById('editor-merge-result');
@@ -28,7 +31,8 @@ const App = {
         
         UI.stats.fileCount = document.getElementById('display-file-count');
         UI.stats.tokenCount = document.getElementById('display-token-estimator');
-        
+        UI.stats.baselineName = document.getElementById('display-baseline-name');
+
         UI.btns.upload = document.getElementById('action-import-dir');
         UI.btns.add = document.getElementById('action-append-files');
         UI.btns.copyTree = document.getElementById('action-copy-structure');
@@ -39,11 +43,50 @@ const App = {
         UI.btns.downloadPreview = document.getElementById('action-download-text');
         UI.btns.clearPreview = document.getElementById('action-clear-result');
         UI.btns.clearPatch = document.getElementById('action-clear-patch'); 
+        UI.btns.uploadBaseline = document.getElementById('action-upload-baseline');
         UI.btns.previewPatch = document.getElementById('action-preview-patch');
         UI.btns.applyDiff = document.getElementById('action-apply-patch');
         UI.btns.clearDiff = document.getElementById('action-clear-diff');
         UI.btns.downloadZip = document.getElementById('action-export-zip');
         UI.btns.clearRestore = document.getElementById('btnClearRestore');
+    },
+    switchLanguage: () => {
+        // 1. 切换状态
+        STATE.lang = STATE.lang === 'zh' ? 'en' : 'zh';
+
+        // 2. 更新全局文本对象
+        UI_TEXT = I18N_RESOURCES[STATE.lang];
+
+        // 3. 重新渲染静态文本 (data-i18n)
+        App.renderStaticText();
+
+        // 4. 重新初始化占位符 (placeholder)
+        App.initPlaceholders();
+
+        // 5. 特殊处理：如果有空状态的 innerHTML，需要手动刷新
+        if (!STATE.files.length) {
+            if (UI.areas.treeContainer) UI.areas.treeContainer.innerHTML = UI_TEXT.html.treeWaiting;
+        }
+        if (!UI.areas.diff.textContent.trim()) { // 简单判断是否为空状态
+            UI.areas.diff.innerHTML = UI_TEXT.html.diffEmptyState;
+        }
+
+        // 6. 提示用户
+        Utils.showToast(`Language switched to ${STATE.lang === 'zh' ? '中文' : 'English'}`);
+    },
+
+    renderStaticText: () => {
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(el => {
+            const keyPath = el.getAttribute('data-i18n');
+            // 通过 'buttons.import' 这种字符串路径去 UI_TEXT 对象里取值
+            const text = keyPath.split('.').reduce((obj, key) => obj && obj[key], UI_TEXT);
+            if (text) {
+                el.textContent = text;
+            } else {
+                console.warn(`Missing translation for key: ${keyPath}`);
+            }
+        });
     },
 
     initPlaceholders: () => {
@@ -102,7 +145,7 @@ const App = {
                     const customRules = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
                     STATE.ignoreRules.push(...customRules);
                 }
-                Utils.showToast(`检测并应用了 ${gitIgnoreFiles.length} 个 .gitignore 文件`);
+                Utils.showToast(UI_TEXT.toast.gitIgnoreDetected(gitIgnoreFiles.length));
             }
 
             let loaded = 0;
@@ -116,7 +159,7 @@ const App = {
                 STATE.files.push({ path, content: await Utils.readFile(f), originalFile: f });
                 loaded++;
             }
-
+            STATE.needsTreeRebuild = true; // 强制下一次渲染重建 DOM
             Logic.renderProjectState();
             Utils.showToast(UI_TEXT.toast.projectLoaded(loaded, ignoredCount));
             e.target.value = '';
@@ -135,15 +178,16 @@ const App = {
                 if (existIdx > -1) STATE.files[existIdx].content = content;
                 else STATE.files.push({ path, content, originalFile: f });
             }
+            STATE.needsTreeRebuild = true; // 强制下一次渲染重建 DOM
             Logic.renderProjectState();
-            Utils.showToast(`追加了 ${fileList.length} 个文件`);
+            Utils.showToast(UI_TEXT.toast.addedFiles(fileList.length));
             e.target.value = '';
         };
     },
 
     attachToolbarHandlers: () => {
+        UI.btns.switchLang.onclick = App.switchLanguage;
         UI.btns.copyTree.onclick = () => Utils.copyToClipboard(Logic.generateTreeText());
-        
         UI.btns.clearProject.onclick = () => {
             STATE.files = [];
             STATE.projectName = "Project";
@@ -152,15 +196,15 @@ const App = {
             Logic.renderProjectState();
             UI.areas.treeContainer.innerHTML = UI_TEXT.html.treeEmptyState;
             UI.areas.preview.value = "";
+            UI.stats.baselineName.innerText = UI_TEXT.labels.baselineName;
             Utils.showToast(UI_TEXT.toast.projectCleared);
         };
-
         UI.btns.selectAll.onclick = () => {
             STATE.files.forEach(f => f.excluded = false);
             Logic.renderProjectState();
-            Utils.showToast(`已恢复全选 (${STATE.files.length} 个文件)`); 
+            // ✅ 修正：
+            Utils.showToast(UI_TEXT.toast.treeRestored(STATE.files.length)); 
         };
-
         UI.btns.mergeTrigger.onclick = Logic.mergeProjectFiles;
         UI.btns.copyPreview.onclick = () => Utils.copyToClipboard(UI.areas.preview.value);
         UI.btns.clearPreview.onclick = () => UI.areas.preview.value = "";
@@ -168,6 +212,21 @@ const App = {
         UI.btns.downloadPreview.onclick = () => {
             const blob = new Blob([UI.areas.preview.value], { type: 'text/plain;charset=utf-8' });
             saveAs(blob, `${STATE.projectName}_${Utils.getTimestamp()}.txt`);
+        };
+
+        UI.btns.uploadBaseline.onclick = () => UI.inputs.baseline.click();
+
+        UI.inputs.baseline.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const content = await Utils.readFile(file);
+            // 调用 Core 中的逻辑注册基准文件
+            PatchLogic.registerBaseline(file.name, content);
+            UI.stats.baselineName.innerText = file.name;
+
+            Utils.showToast(`已加载基准文件: ${file.name}`);
+            e.target.value = ''; // 重置 input 以允许重复上传同名文件
         };
 
         UI.btns.previewPatch.onclick = PatchLogic.previewPatch;
