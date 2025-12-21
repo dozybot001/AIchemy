@@ -613,7 +613,7 @@ const RequirementLogic = {
                 const nameAttr = group.type === 'radio' ? `name="${group.id}"` : ''; 
                 
                 html += `
-                    <input type="${group.type}" id="${inputId}" ${nameAttr} class="chip-input" value="${opt}" data-group="${group.id}">
+                    <input type="${group.type}" id="${inputId}" ${nameAttr} class="chip-input" value="${opt}" data-group-title="${group.title}">
                     <label for="${inputId}" class="chip-label">${opt}</label>
                 `;
             });
@@ -635,7 +635,7 @@ const RequirementLogic = {
         const inputs = document.querySelectorAll('.chip-input:checked');
         let selectionsStr = "";
         inputs.forEach(input => {
-            const groupTitle = input.dataset.group; // 注意：renderOptions 里要把 data-group 改存 title 更直观
+            const groupTitle = input.dataset.groupTitle;
             selectionsStr += `- ${groupTitle}: ${input.value}\n`;
         });
 

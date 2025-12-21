@@ -1,6 +1,4 @@
-// js/worker-diff.js
-importScripts('[https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js](https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js)');
-importScripts('utils.js'); //以此复用 escapeHtml，需要确保 utils.js 不依赖 DOM 或 window 对象
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js');
 
 // 如果 utils.js 有 DOM 依赖，建议在这里重写一个简单的 escapeHtml
 const escapeHtml = (text) => {
