@@ -158,64 +158,51 @@ const Logic = {
         const content = UI.areas.restore.value || "";
         if (!content.trim()) return Utils.showToast(UI_TEXT.toast.restoreFail, "error");
 
-        const zip = new JSZip();
-        const headerRegex = /(?:^|\n)(?:\\+)?\\=== File:\s*(.*?)\s*===/g;
-        
-        let match;
-        let count = 0;
-        const files = [];
+        Utils.showToast("正在后台打包...", "info"); // 提示用户
 
-        while ((match = headerRegex.exec(content)) !== null) {
-            files.push({
-                path: match[1].trim(),
-                startIndex: match.index + match[0].length,
-                fullMatchIndex: match.index
-            });
-        }
+        // 创建 Worker
+        const worker = new Worker('js/worker-zip.js');
 
-        if (files.length === 0) return Utils.showToast(UI_TEXT.toast.restoreNoTag, "error");
-        for (let i = 0; i < files.length; i++) {
-            const current = files[i];
-            const next = files[i + 1];
-            let rawChunk = next 
-                ? content.substring(current.startIndex, next.fullMatchIndex) 
-                : content.substring(current.startIndex);
-            let cleanContent = "";
-            let processedChunk = rawChunk.trim();
-            const hasOpeningFence = /^\s*```/.test(processedChunk);
-            const hasClosingFence = /```\s*$/.test(processedChunk);
-            if (hasOpeningFence && hasClosingFence) {
-                const firstNewLineIndex = processedChunk.indexOf('\n');
-                const lastFenceIndex = processedChunk.lastIndexOf('```');
+        // 发送数据
+        worker.postMessage({
+            content: content,
+            config: {
+                // 假设这两个常量定义在 config.js 或全局作用域，需要传给 worker
+                MAGIC_TOKEN: typeof MAGIC_TOKEN !== 'undefined' ? MAGIC_TOKEN : 'AIchemy_Magic_Token',
+                ESCAPED_TOKEN: typeof ESCAPED_TOKEN !== 'undefined' ? ESCAPED_TOKEN : 'AIchemy_Escaped_Token'
+            }
+        });
 
-                if (firstNewLineIndex !== -1 && lastFenceIndex > firstNewLineIndex) {
-                    cleanContent = processedChunk.substring(firstNewLineIndex + 1, lastFenceIndex);
-                } else {
-                    cleanContent = "";
-                }
+        // 监听结果
+        worker.onmessage = (e) => {
+            const { success, blob, count, error } = e.data;
+            
+            if (success) {
+                saveAs(blob, `${STATE.projectName}_restore_${Utils.getTimestamp()}.zip`);
+                Utils.showToast(UI_TEXT.toast.restoreSuccess(count));
             } else {
-                console.warn(`File ${current.path} fallback to raw text mode.`);
-                cleanContent = rawChunk.trim();
+                if (error === 'no_tags') {
+                    Utils.showToast(UI_TEXT.toast.restoreNoTag, "error");
+                } else {
+                    Utils.showToast("打包失败: " + error, "error");
+                }
             }
+            worker.terminate(); // 任务完成，销毁 worker
+        };
 
-            cleanContent = cleanContent.replaceAll(ESCAPED_TOKEN, MAGIC_TOKEN);
-            if (cleanContent) {
-                zip.file(current.path, cleanContent);
-                count++;
-            }
-        }
-
-        const blob = await zip.generateAsync({ type: "blob" });
-        saveAs(blob, `${STATE.projectName}_restore_${Utils.getTimestamp()}.zip`);
-        Utils.showToast(UI_TEXT.toast.restoreSuccess(count));
+        worker.onerror = (err) => {
+            console.error(err);
+            Utils.showToast("Worker 发生错误", "error");
+            worker.terminate();
+        };
     }
 };
-
 /* ==========================================================================
-   Patch & Diff Engine
+   Patch & Diff Engine (Enhanced Atomized Version)
    ========================================================================== */
 const PatchLogic = {
-    pendingChanges: new Map(),
+    // 状态存储：Map<FilePath, { original: string, hunks: Array }>
+    fileStates: new Map(),
     baselines: new Map(),
     dmp: new diff_match_patch(),
 
@@ -224,213 +211,476 @@ const PatchLogic = {
     },
 
     parsePatchText: (text) => {
-        const fileRegex = /(?:^|\n)(?:\\+)?\\=== File:\s*(.*?)\s*===\s*[\r\n]+<<<< SEARCH\s*([\s\S]*?)==== REPLACE\s*([\s\S]*?)>>>>/g;
+        // 允许 >>> 后面有空格或换行
+        const fileRegex = /(?:^|\n)(?:\\+)?\\\=== File:\s*(.*?)\s*===\s*[\r\n]+<<<< SEARCH\s*([\s\S]*?)==== REPLACE\s*([\s\S]*?)>>>>/g;
         const patches = [];
         let match;
         while ((match = fileRegex.exec(text)) !== null) {
             patches.push({
                 path: match[1].trim(),
-                search: match[2], 
-                replace: match[3]
+                search: match[2],
+                replace: match[3],
+                // 生成唯一ID方便UI操作
+                id: `hunk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             });
         }
         return patches;
     },
 
-    // 辅助：生成双栏 HTML 结构
     generateSplitHtml: (diffs) => {
         let oldHtml = "";
         let newHtml = "";
-
         diffs.forEach(([op, text]) => {
-            // op: 0 = Equal, -1 = Delete, 1 = Insert
             const safeText = Utils.escapeHtml(text);
-            
             if (op === 0) {
                 oldHtml += safeText;
                 newHtml += safeText;
             } else if (op === -1) {
-                // 删除：左侧显示删除线
                 oldHtml += `<del>${safeText}</del>`;
             } else if (op === 1) {
-                // 新增：右侧显示高亮
                 newHtml += `<ins>${safeText}</ins>`;
             }
         });
-
         return { oldHtml, newHtml };
     },
+
+    /**
+     * 核心预览逻辑：生成可交互的 DOM
+     */
+    // ... 在 PatchLogic 对象中 ...
 
     previewPatch: () => {
         const input = UI.areas.patch.value;
         if (!input.trim()) return Utils.showToast(UI_TEXT.toast.patchEmpty, "error");
 
-        const patches = PatchLogic.parsePatchText(input);
-        if (patches.length === 0) return Utils.showToast(UI_TEXT.toast.patchInvalid, "error");
+        Utils.showToast("正在分析差异...", "info");
+        UI.areas.diff.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">⏳ 计算中...</div>';
 
-        PatchLogic.pendingChanges.clear();
-        let finalOutputHtml = `<div class="diff-container">`; 
-        let successCount = 0;
-
-        // 辅助工具
-        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const normalizePath = (p) => p.trim().replace(/^\.\//, '');
-
-        patches.forEach(p => {
-            const targetPath = normalizePath(p.path);
-            const targetFileName = targetPath.split('/').pop(); 
-
-            let originalContent = null;
-            let sourceLabel = "";
-
-            // 1. 优先检查基准文件
-            if (PatchLogic.baselines.has(targetFileName)) {
-                originalContent = PatchLogic.baselines.get(targetFileName);
-                sourceLabel = UI_TEXT.templates.labelBaseline;
-            } 
-            // 2. 其次检查项目文件
-            else {
-                const fileObj = STATE.files.find(f => normalizePath(f.path) === targetPath);
-                if (fileObj) {
-                    originalContent = fileObj.content;
-                }
-            }
-
-            if (originalContent === null) {
-                finalOutputHtml += `
-                    <div class="diff-file-block">
-                        <div class="diff-file-header" style="color:#ff6b6b">
-                            ${UI_TEXT.templates.diffNotFound(p.path)}
-                        </div>
-                    </div>`;
-            }
-
-            let newContent = originalContent;
-            let matchIndex = -1;
-            let matchLength = 0;
-
-            const searchBlock = p.search.replace(/\s+$/, '');
-            
-            // [新增] 安全检查：计算匹配项出现的次数
-            // 使用 split 分割来统计出现次数 (次数 = 数组长度 - 1)
-            const occurrenceCount = originalContent.split(searchBlock).length - 1;
-
-            // 如果匹配超过 1 次，这是危险操作！
-            if (occurrenceCount > 1) {
-                 finalOutputHtml += `
-                    <div class="diff-file-block" style="border-color: #ff9800;">
-                        <div class="diff-file-header" style="background: rgba(255, 152, 0, 0.1); color: #ff9800;">
-                                ${UI_TEXT.templates.diffAmbiguous(p.path)}
-                        </div>
-                        <div class="diff-message" style="text-align:left; color:#e3e3e3;">
-                                ${UI_TEXT.templates.diffAmbiguousDesc(occurrenceCount, Utils.escapeHtml(searchBlock))}
-                        </div>
-                    </div>`;
-                return; // 跳过此文件的处理
-            }
-
-            // === 策略 A: 精确匹配 (优先) ===
-            const exactIdx = originalContent.indexOf(searchBlock);
-            if (exactIdx !== -1) {
-                matchIndex = exactIdx;
-                matchLength = searchBlock.length;
-            } 
-            // === 策略 B: 宽松正则匹配 (降级) ===
-            // 注意：如果上面精确匹配失败，才进这里。正则匹配较难统计次数，暂维持原样或仅做首个匹配
-            else {
-                 // ... (保持原本的正则逻辑 [cite: 132-135]) ...
-                 const escapedSearch = escapeRegExp(searchBlock);
-                 const flexiblePattern = escapedSearch.replace(/\s+/g, '\\s+');
-                 // 使用全局匹配 g 来检查次数
-                 const regexGlobal = new RegExp(flexiblePattern, 'g');
-                 const matches = [...originalContent.matchAll(regexGlobal)];
-                 
-                 if (matches.length > 1) {
-                    finalOutputHtml += `
-                        <div class="diff-file-block" style="border-color: #ff9800;">
-                            <div class="diff-file-header" style="background: rgba(255, 152, 0, 0.1); color: #ff9800;">
-                                    ${UI_TEXT.templates.diffAmbiguous(p.path)}
-                            </div>
-                            <div class="diff-message" style="text-align:left; color:#e3e3e3;">
-                                    ${UI_TEXT.templates.diffAmbiguousDesc(occurrenceCount, Utils.escapeHtml(searchBlock))}
-                            </div>
-                        </div>`;
-                     return;
-                 }
-                 
-                 if (matches.length === 1) {
-                    matchIndex = matches[0].index;
-                    matchLength = matches[0][0].length;
-                    console.log(`[AIchemy] Fuzzy match fix for ${p.path}`);
-                 }
-            }
-
-            // === 执行替换 ===
-            // (保持原逻辑 [cite: 136])
-            if (matchIndex !== -1) {
-                const before = originalContent.slice(0, matchIndex);
-                const after = originalContent.slice(matchIndex + matchLength);
-                newContent = before + p.replace + after;
-            } else {
-                finalOutputHtml += `
-                    <div class="diff-file-block">
-                        <div class="diff-file-header">
-                            ${UI_TEXT.templates.diffMatchFail(p.path)}
-                        </div>
-                        <div class="diff-message">
-                            ${UI_TEXT.templates.diffMatchFailDesc(Utils.escapeHtml(searchBlock))}
-                        </div>
-                    </div>`;
-                return; 
-            }
-
-            // === 生成 Diff 预览 (双栏) ===
-            const diffs = PatchLogic.dmp.diff_main(originalContent, newContent);
-            PatchLogic.dmp.diff_cleanupSemantic(diffs);
-            
-            const { oldHtml, newHtml } = PatchLogic.generateSplitHtml(diffs);
-
-            finalOutputHtml += `
-                <div class="diff-file-block">
-                    <div class="diff-file-header">File: ${p.path}${sourceLabel}</div>
-                    <div class="diff-split-view">
-                        <div class="diff-pane pane-old">${oldHtml}</div>
-                        <div class="diff-pane pane-new">${newHtml}</div>
-                    </div>
-                </div>`;
-            
-            PatchLogic.pendingChanges.set(p.path, newContent);
-            successCount++;
+        // 准备文件数据 (将 Map 转为 Plain Object 传给 Worker)
+        const filesData = {};
+        
+        // 1. 先放入 Baseline
+        for (const [name, content] of PatchLogic.baselines) {
+            filesData[name] = content;
+        }
+        // 2. 再放入当前项目文件 (优先匹配全路径，Worker 里会处理文件名匹配)
+        STATE.files.forEach(f => {
+            const p = f.path.trim().replace(/^\.\//, '');
+            filesData[p] = f.content;
         });
 
-        finalOutputHtml += `</div>`;
-        UI.areas.diff.innerHTML = finalOutputHtml;
+        // 创建 Worker
+        const worker = new Worker('js/worker-diff.js');
 
-        if (successCount > 0) {
-            Utils.showToast(UI_TEXT.toast.diffSuccess(successCount));
-            // 优化：预览生成后平滑滚动到变更区域顶部
-            UI.areas.diff.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        worker.postMessage({
+            patchInput: input,
+            filesData: filesData
+        });
+
+        worker.onmessage = (e) => {
+            const { success, results, error } = e.data;
+            
+            if (!success) {
+                UI.areas.diff.innerHTML = "";
+                Utils.showToast(error === 'invalid_patch' ? UI_TEXT.toast.patchInvalid : "Diff 计算错误", "error");
+                worker.terminate();
+                return;
+            }
+
+            // --- 渲染逻辑开始 (回到主线程) ---
+            PatchLogic.fileStates.clear();
+            UI.areas.diff.innerHTML = "";
+            
+            let successFileCount = 0;
+            const containerFragment = document.createDocumentFragment();
+
+            results.forEach(fileResult => {
+                if (fileResult.error) {
+                    PatchLogic._renderErrorBlock(containerFragment, fileResult.filePath, fileResult.error);
+                    return;
+                }
+
+                // 还原 Hunk 状态对象
+                const fileHunks = fileResult.hunks.map(h => ({
+                    ...h,
+                    active: h.isValid // 默认状态
+                }));
+
+                // 渲染文件容器
+                const fileWrapper = document.createElement('div');
+                fileWrapper.className = 'diff-file-wrapper';
+                // 判断来源标签
+                const isBaseline = PatchLogic.baselines.has(fileResult.filePath.split('/').pop());
+                const sourceLabel = isBaseline ? UI_TEXT.templates.labelBaseline : "";
+
+                fileWrapper.innerHTML = `
+                    <div class="diff-file-info">
+                        <span>📄 ${fileResult.filePath} <small style="opacity:0.6">${sourceLabel}</small></span>
+                        <span style="font-size:0.8em; opacity:0.8">${fileHunks.length} changes detected</span>
+                    </div>
+                    <div class="diff-hunk-container" id="container-${fileResult.filePath.replace(/\W/g, '_')}"></div>
+                `;
+
+                const hunkContainer = fileWrapper.querySelector('.diff-hunk-container');
+                let validHunkCount = 0;
+
+                fileResult.hunks.forEach((h, index) => {
+                    const isActive = h.isValid;
+                    if (isActive) validHunkCount++;
+
+                    // 构建样式
+                    let headerStyle = "";
+                    let statusHtml = "";
+                    if (!h.isValid) {
+                        headerStyle = "background: rgba(255, 50, 50, 0.1); color: #ffaaaa;";
+                        statusHtml = `<span style="color:#ff6b6b; margin-right:10px;">⚠️ ${h.validityMsg}</span>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'hunk-card';
+                    if (!isActive) card.classList.add('rejected');
+                    card.dataset.hunkId = h.id;
+
+                    card.innerHTML = `
+                        <div class="hunk-header" style="${headerStyle}">
+                            <span>Change #${index + 1}</span>
+                            <div class="hunk-actions">
+                                ${statusHtml}
+                                <button class="hunk-toggle ${isActive ? '' : 'is-rejected'}" 
+                                        onclick="PatchLogic.toggleHunk('${fileResult.filePath}', '${h.id}', this)">
+                                    ${isActive ? '✅ Applied' : '❌ Ignored'}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="diff-split-view">
+                            <div class="diff-pane pane-old">${h.diffHtml.oldHtml}</div>
+                            <div class="diff-pane pane-new">${h.diffHtml.newHtml}</div>
+                        </div>
+                    `;
+                    hunkContainer.appendChild(card);
+                });
+
+                // 存入 PatchLogic 状态供后续 "Apply" 使用
+                PatchLogic.fileStates.set(fileResult.filePath, {
+                    original: fileResult.originalContent,
+                    hunks: fileHunks
+                });
+
+                if (validHunkCount > 0) successFileCount++;
+                containerFragment.appendChild(fileWrapper);
+            });
+
+            UI.areas.diff.appendChild(containerFragment);
+
+            if (successFileCount > 0) {
+                Utils.showToast(UI_TEXT.toast.diffSuccess(results.length));
+                UI.areas.diff.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                Utils.showToast("未发现有效变更", "error");
+            }
+            
+            worker.terminate();
+        };
+
+        worker.onerror = (err) => {
+            console.error(err);
+            UI.areas.diff.innerHTML = '<div style="color:red; text-align:center;">Worker Error</div>';
+            Utils.showToast("Diff Worker 发生错误", "error");
+            worker.terminate();
+        };
+    },
+
+    // 渲染错误块（无需状态管理）
+    _renderErrorBlock: (container, path, msg) => {
+        const div = document.createElement('div');
+        div.className = 'diff-file-wrapper';
+        div.innerHTML = `
+            <div class="diff-file-info" style="color:#ff6b6b">📄 ${path} (Error)</div>
+            <div class="diff-message">${msg}</div>
+        `;
+        container.appendChild(div);
+    },
+
+    /**
+     * [新增] 切换单个变更块的状态
+     */
+    toggleHunk: (filePath, hunkId, btnElement) => {
+        const fileState = PatchLogic.fileStates.get(filePath);
+        if (!fileState) return;
+
+        const hunk = fileState.hunks.find(h => h.id === hunkId);
+        if (!hunk) return;
+
+        // 切换状态
+        hunk.active = !hunk.active;
+
+        // 更新 UI
+        const card = btnElement.closest('.hunk-card');
+        if (hunk.active) {
+            btnElement.textContent = "✅ Applied";
+            btnElement.classList.remove('is-rejected');
+            card.classList.remove('rejected');
         } else {
-            Utils.showToast(UI_TEXT.toast.diffNoChange, "error");
+            btnElement.textContent = "❌ Ignored";
+            btnElement.classList.add('is-rejected');
+            card.classList.add('rejected');
         }
     },
 
-    applyChanges: () => {
-        if (PatchLogic.pendingChanges.size === 0) {
-            return Utils.showToast(UI_TEXT.toast.applyNoChange, "error");
+    /**
+     * [重写] 根据当前状态生成最终文件内容
+     * 支持多文件处理，返回 Array<{path, content}>
+     */
+    _getPatchedFiles: () => {
+        if (PatchLogic.fileStates.size === 0) {
+            Utils.showToast("没有可应用的变更", "error");
+            return [];
         }
-        let count = 0;
-        PatchLogic.pendingChanges.forEach((newContent, path) => {
-            const fileObj = STATE.files.find(f => f.path === path);
-            if (fileObj) {
-                fileObj.content = newContent;
-                count++;
+
+        const results = [];
+
+        for (const [path, state] of PatchLogic.fileStates) {
+            let currentContent = state.original;
+            
+            // 过滤出激活的 Hunks
+            const activeHunks = state.hunks.filter(h => h.active && h.isValid);
+            
+            // 简单处理：按顺序执行 replace
+            // 注意：如果多个 Hunk 修改同一文件，且顺序不对，replace 可能会失败。
+            // 假设 LLM 生成的 Patch 是有序的。
+            let appliedCount = 0;
+            
+            for (const hunk of activeHunks) {
+                // 使用 replace 替换一次
+                // 这里的关键是：originalSearch 必须能在 currentContent 中找到
+                // 因为是逐个应用，如果 Hunk A 修改了 Hunk B 的上下文，Hunk B 会失效。
+                // 这是一个简化版的 Patch 应用逻辑。
+                if (currentContent.includes(hunk.originalSearch)) {
+                    currentContent = currentContent.replace(hunk.originalSearch, hunk.replace);
+                    appliedCount++;
+                } else {
+                    console.warn(`[Patch] Hunk skipped for ${path}, context not found.`);
+                }
             }
+            
+            if (appliedCount > 0) {
+                results.push({ path, content: currentContent });
+            }
+        }
+        
+        return results;
+    },
+
+    applyAndDownload: () => {
+        const patchedFiles = PatchLogic._getPatchedFiles();
+        if (patchedFiles.length === 0) return;
+
+        // 如果只有一个文件，直接下载文本
+        if (patchedFiles.length === 1) {
+            const f = patchedFiles[0];
+            const blob = new Blob([f.content], { type: 'text/plain;charset=utf-8' });
+            const newFileName = f.path.split('/').pop().replace(/(\.[\w\d]+)$/, '_patched$1');
+            saveAs(blob, newFileName);
+            Utils.showToast(`已下载: ${newFileName}`);
+        } 
+        // 如果有多个文件，打包下载 (需要 JSZip 支持，index.html 已引入)
+        else {
+            const zip = new JSZip();
+            patchedFiles.forEach(f => {
+                zip.file(f.path, f.content);
+            });
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, `patched_project_${Utils.getTimestamp()}.zip`);
+                Utils.showToast(`已打包下载 ${patchedFiles.length} 个文件`);
+            });
+        }
+    },
+
+    applyAndCopy: () => {
+        const patchedFiles = PatchLogic._getPatchedFiles();
+        if (patchedFiles.length === 0) return;
+
+        // 仅复制第一个文件的内容，或者拼接
+        // 这里逻辑视需求而定，通常复制是为了快速粘贴回 IDE
+        // 如果是多文件，提示用户用下载
+        if (patchedFiles.length > 1) {
+            Utils.showToast("检测到多个文件变更，请使用'应用 & 下载'", "info");
+        }
+        
+        // 无论如何复制第一个
+        Utils.copyToClipboard(patchedFiles[0].content);
+    }
+};
+
+/* ==========================================================================
+   New Module: Requirement Architect Logic
+   ========================================================================== */
+const RequirementLogic = {
+    // 1. 配置管理
+    getLLMConfig: () => {
+        const saved = localStorage.getItem('aichemy_llm_config');
+        return saved ? JSON.parse(saved) : {
+            baseUrl: "https://api.openai.com/v1", // 默认
+            model: "gpt-4o",
+            apiKey: ""
+        };
+    },
+    
+    saveLLMConfig: (config) => {
+        localStorage.setItem('aichemy_llm_config', JSON.stringify(config));
+    },
+
+    /**
+     * 2. 调用真实 LLM API 生成动态 Schema
+     */
+    fetchMockOptions: async (userInput) => {
+
+        const config = RequirementLogic.getLLMConfig();
+        if (!config.apiKey) {
+            Utils.showToast("请先在设置中配置 API Key", "error");
+            throw new Error("No API Key");
+        }
+
+        // 定义 JSON Schema 的 System Prompt
+        const systemPrompt = `
+        You are a Senior Technical Architect. 
+        Analyze the user's project request and determine the critical technical decisions needed.
+        
+        Output strictly valid JSON with NO Markdown formatting (no \`\`\`json blocks).
+        The output must be an Array of Option Groups following this schema:
+        [
+            {
+                "id": "unique_string_id",
+                "title": "Display Title (e.g. 🛠️ Tech Stack)",
+                "type": "radio" | "checkbox", 
+                "options": ["Option A", "Option B", "Option C"]
+            }
+        ]
+        
+        Generate 3-4 relevant groups based on the specific user request (e.g., if it's a game, ask about Engine/2D/3D; if it's a dashboard, ask about Charts/Data).
+        Always include a "Visual Style" group.
+        `;
+
+        try {
+            const response = await fetch(`${config.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${config.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: `User Request: "${userInput}"` }
+                    ],
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error?.message || "API Request Failed");
+            }
+
+            const data = await response.json();
+            let content = data.choices[0].message.content;
+
+            // 清洗数据：移除可能存在的 Markdown 代码块标记
+            content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            
+            return JSON.parse(content);
+
+        } catch (error) {
+            Utils.showToast(`LLM Error: ${error.message}`, "error");
+            console.error("LLM Call Failed:", error);
+            // 出错时返回一个保底的静态选项，保证流程不中断
+            return [
+                {
+                    id: "error_fallback",
+                    title: "⚠️ 连接失败，使用默认选项",
+                    type: "checkbox",
+                    options: ["Vanilla JS", "HTML5", "CSS3"]
+                }
+            ];
+        }
+    },
+
+    /**
+     * 2. 渲染选项卡片
+     * @param {Array} schema - 从 fetchMockOptions 获取的配置数组
+     */
+    renderOptions: (schema) => {
+        const container = document.getElementById('container-req-options');
+        
+        // 清空容器并移除隐藏类
+        container.innerHTML = '';
+        container.classList.remove('hidden');
+
+        // 遍历并生成选项组卡片
+        schema.forEach(group => {
+            const card = document.createElement('div');
+            card.className = 'option-group-card';
+            
+            // 构建卡片内部 HTML
+            let html = `<span class="option-group-title">${group.title}</span><div class="option-chips">`;
+            
+            group.options.forEach((opt, idx) => {
+                // 生成唯一 ID
+                const inputId = `opt-${group.id}-${idx}`;
+                // Radio 需要 name 属性分组，Checkbox 则不需要
+                const nameAttr = group.type === 'radio' ? `name="${group.id}"` : ''; 
+                
+                html += `
+                    <input type="${group.type}" id="${inputId}" ${nameAttr} class="chip-input" value="${opt}" data-group="${group.id}">
+                    <label for="${inputId}" class="chip-label">${opt}</label>
+                `;
+            });
+            
+            html += `</div>`;
+            card.innerHTML = html;
+            container.appendChild(card);
         });
-        Logic.renderProjectState();
-        PatchLogic.pendingChanges.clear();
-        UI.areas.patch.value = "";
-        UI.areas.diff.innerHTML = "";
-        Utils.showToast(UI_TEXT.toast.applySuccess(count));
+    },
+
+    /**
+     * 3. 生成最终 Prompt 并处理 UI 自适应
+     */
+    generateFinalPrompt: () => {
+         
+         const userCommand = document.getElementById('input-req-command').value.trim();
+         if (!userCommand) return Utils.showToast("请先输入一些需求想法", "error");
+
+         const inputs = document.querySelectorAll('.chip-input:checked');
+         let selections = {};
+         inputs.forEach(input => {
+             const group = input.dataset.group;
+             if (!selections[group]) selections[group] = [];
+             selections[group].push(input.value);
+         });
+
+         const prompt = `
+# Role: Senior Frontend Developer
+
+## 1. User Task
+${userCommand}
+
+## 2. Technical Decisions (Architected by LLM)
+${Object.entries(selections).length === 0 ? "(Auto-decide based on best practices)" : ""}
+${Object.entries(selections).map(([key, vals]) => `- **${key}**: ${vals.join(', ')}`).join('\n')}
+
+## 3. Implementation Context
+- **Project Structure**: Follow the existing file tree strictly.
+- **Code Quality**: Write modular, clean, and performant code.
+- **Style**: Use CSS variables defined in global.css.
+`.trim();
+
+        const outputArea = document.getElementById('output-architect-prompt');
+        const resultContainer = document.getElementById('container-final-prompt');
+        outputArea.value = prompt;
+        resultContainer.classList.remove('hidden');
+        outputArea.style.height = 'auto';
+        outputArea.style.height = (outputArea.scrollHeight + 2) + 'px';
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 };

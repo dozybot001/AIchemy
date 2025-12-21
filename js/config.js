@@ -49,7 +49,7 @@ const UI = {
    3. UI Text & Templates (Internationalization)
    ========================================================================== */
 
-// 1. 定义语言包资源
+// 定义语言包资源
 const I18N_RESOURCES = {
     zh: {
         labels: {
@@ -64,7 +64,8 @@ const I18N_RESOURCES = {
             panelDiff: "变更预览",
             statBaseline: "基准文件",
             panelRestore: "手动还原",
-            baselineName: "无"
+            baselineName: "~",
+            panelArchitect: "Prompt 架构师"
         },
         buttons: {
             import: "加载项目",
@@ -87,7 +88,8 @@ const I18N_RESOURCES = {
             merge: "合并后的文本…",
             patch: "在此粘贴补丁代码…",
             diff: "应用补丁后的差异对比…",
-            restore: "在此粘贴文本…"
+            restore: "在此粘贴文本…",
+            architectInput: "输入你的简短想法，例如：我要做一个贪吃蛇游戏..."
         },
         toast: {
             emptyContent: "内容为空",
@@ -143,99 +145,6 @@ const I18N_RESOURCES = {
             treeWaiting: `<div class="empty-hint">等待导入项目文件…</div>`
         }
     },
-    // === English Translation ===
-    en: {
-        labels: {
-            appName: "AIchemy",
-            github: "GitHub",
-            blog: "Blog",
-            panelFiles: "Project Files",
-            statFiles: "Files",
-            statTokens: "Tokens",
-            panelPreview: "Merge Preview",
-            panelPatch: "Paste Patch",
-            panelDiff: "Change Preview",
-            statBaseline: "Baseline File",
-            panelRestore: "Manual Restore",
-            baselineName: "None"
-        },
-        buttons: {
-            import: "Load Project",
-            copyTree: "Copy Tree",
-            append: "Append",
-            selectAll: "Select All",
-            merge: "Merge",
-            clearWorkspace: "🗑️",
-            copy: "Copy",
-            download: "Download",
-            clear: "🗑️",
-            previewPatch: "Preview Changes",
-            uploadBaseline: "Upload Baseline",
-            applyPatch: "Apply Changes",
-            packDownload: "Download Package",
-            switchLang: "中文" // Text shown on the language toggle button
-        },
-        placeholder: {
-            tree: "Waiting to import project files...",
-            merge: "Merged text...",
-            patch: "Paste patch code here...",
-            diff: "Diff after applying patch...",
-            restore: "Paste text here..."
-        },
-        toast: {
-            emptyContent: "Content is empty",
-            copySuccess: "Copied to clipboard",
-            copyFail: "Copy failed",
-            noMergeFiles: "No files available for merging",
-            mergeSuccess: (count) => `Merged ${count} files`,
-            restoreFail: "Please paste content below first",
-            restoreNoTag: "File marker not found",
-            restoreSuccess: (count) => `Parsed and packaged ${count} files`,
-            patchEmpty: "Patch content is empty",
-            patchInvalid: "No valid patch blocks recognized, please check format",
-            diffNoChange: "No valid changes to preview",
-            diffSuccess: (count) => `Successfully parsed ${count} changes, please confirm before applying`,
-            applyNoChange: "No changes pending to apply, please preview first",
-            applySuccess: (count) => `✅ Updated ${count} files`,
-            projectLoaded: (total, ignored) => ignored > 0
-                ? `Loaded ${total} files (${ignored} ignored)`
-                : `Loaded ${total} files`,
-            projectCleared: "Project cleared",
-            baselineLoaded: (name) => `Baseline file loaded: ${name}`,
-            treeRestored: (count) => `Restored selection state (${count} files)`,
-            addedFiles: (count) => `Appended ${count} files`,
-            gitIgnoreDetected: (count) => `Applied ${count} .gitignore rule(s)`,
-            beforeUnload: "Are you sure you want to leave? Current project content will be lost.",
-            binaryOmitted: "(Binary file omitted)",
-            fileTooLarge: "(File too large, partially processed only)"
-        },
-        templates: {
-            diffNotFound: (path) => `❌ File not found: ${path}`,
-            diffAmbiguous: (path) => `⚠️ Ambiguous match: ${path}`,
-            diffAmbiguousDesc: (count, snippet) => `
-                <strong>This code snippet appears ${count} times in the file.</strong><br/>
-                To avoid incorrect modifications, changes to this file have been stopped.<br/>
-                <br/>
-                <em style="opacity:0.6">Suggestion: Please expand the context of the Search Block in the Patch Paste area to make it unique.</em>
-                <hr style="border:0; border-top:1px dashed #555; margin:10px 0"/>
-                Target snippet:<br/>
-                <pre style="color: #ff9800; font-size:0.8em;">${snippet}</pre>`,
-            diffMatchFail: (path) => `⚠️ Match failed: ${path}`,
-            diffMatchFailDesc: (snippet) => `
-                <strong>Cannot locate the Search Block in the source file.</strong><br/>
-                Target snippet:<br/>
-                <pre style="text-align:left; opacity:0.7; max-height:100px; overflow:auto;">${snippet}</pre>`,
-            labelBaseline: "(Baseline File)"
-        },
-        prompt: {
-            header: `Below is the directory structure and file content of the project. Please answer my questions based on this context:\n\n`
-        },
-        html: {
-            diffEmptyState: `<div class="empty-hint">Diff after applying patch will be shown here...</div>`,
-            treeEmptyState: `<div class="empty-hint">Project file content will be shown here...</div>`,
-            treeWaiting: `<div class="empty-hint">Waiting to import project files...</div>`
-        }
-    }
 };
 
 var UI_TEXT = I18N_RESOURCES.zh;

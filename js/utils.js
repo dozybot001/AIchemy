@@ -66,9 +66,40 @@ const Utils = {
     }),
 
     estimateTokens: (text) => {
-        const chinese = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-        const other = text.length - chinese;
-        return Math.ceil(chinese * CONFIG.tokenWeights.chinese + other * CONFIG.tokenWeights.other);
+        if (!text) return 0;
+
+        // 1. 提取并计算 CJK (中日韩) 字符
+        // 匹配范围：基本汉字 + 扩展 A 区 + 标点
+        const cjkRegex = /[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g;
+        const cjkMatches = text.match(cjkRegex) || [];
+        const cjkCount = cjkMatches.length;
+
+        // 2. 将 CJK 替换为空格，以便处理剩余的拉丁字符/代码
+        const nonCjkText = text.replace(cjkRegex, ' ');
+
+        // 3. 拆分剩余内容
+        // 匹配逻辑：
+        // [\w]+ : 匹配连续的字母、数字、下划线（单词/变量名）
+        // [^\s\w] : 匹配非空白且非单词的字符（各类代码符号、运算符）
+        const tokens = nonCjkText.match(/[\w]+|[^\s\w]/g) || [];
+
+        let latinTokenCount = 0;
+        
+        for (const t of tokens) {
+            if (/^[\w]+$/.test(t)) {
+                // 对于单词/变量名：
+                // GPT 分词器通常将常见单词视为 1 token (如 "const", "return")
+                // 长单词或生僻组合会被拆分。
+                // 经验公式：Math.max(1, length / 4)
+                latinTokenCount += Math.max(1, Math.ceil(t.length / 4));
+            } else {
+                // 对于符号 (如 "{", ";", "+")，通常各占 1 token
+                latinTokenCount += 1;
+            }
+        }
+
+        // 汇总 (CJK 权重设为 1，偏保守，防止 Context Window 溢出)
+        return cjkCount + latinTokenCount;
     },
     
     shouldIgnore: (path) => {
