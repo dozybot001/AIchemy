@@ -16,7 +16,7 @@ const Logic={
         const build=(n,pre="",fp="")=>Object.keys(n).sort().map((k,i,a)=>{
             const isF=n[k]==="__F__",last=i===a.length-1,cf=fp?`${fp}/${k}`:k;
             return `<div class="tree-node ${isF?'tree-node--file':''}" ${isF?`data-path="${cf}" onclick="Logic.toggle('${cf}')"`:""}>
-                <span style="opacity:0.5">${pre+(last?"└── ":"├── ")}</span>
+                <span class="tree-connector">${pre+(last?"└── ":"├── ")}</span>
                 <span class="node-label ${isF?'':'tree-node--folder'}">${k}</span>
             </div>${isF?"":build(n[k],pre+(last?"    ":"│   "),cf)}`;
         }).join('');
@@ -38,7 +38,7 @@ const Logic={
     render:()=>{UI.areas.treeViewer.value=Logic.genTree();Logic.renderTree();Logic.updStats();},
     merge:()=>{
         const f=Logic.getActive();
-        if(!f.length)return Utils.showToast(UI_TEXT.toast.noMergeFiles,"error");
+        if(!f.length) return Utils.showToast(UI_TEXT.toast.noMergeFiles, "error");
         const c=f.map(x=>`${MAGIC_TOKEN} ${x.path} ===\n\`\`\`${getLangFromExt(x.path)}\n${x.content.replaceAll(MAGIC_TOKEN,ESCAPED_TOKEN)}\n\`\`\`\n`).join("\n");
         UI.areas.preview.value=`${UI_TEXT.prompt.header}${Logic.genTree()}\n${"=".repeat(48)}\n\n${c}`;
         UI.areas.preview.parentElement.scrollIntoView({behavior:'smooth',block:'start'});
@@ -47,7 +47,7 @@ const Logic={
     zip:()=>{
         const c=UI.areas.restore.value||"";
         if(!c.trim())return Utils.showToast(UI_TEXT.toast.restoreFail,"error");
-        Utils.showToast("Packaging...","info");
+        Utils.showToast(UI_TEXT.toast.packaging, "info");
         const w=new Worker('js/worker-zip.js');
         w.postMessage({content:c,config:{MAGIC_TOKEN,ESCAPED_TOKEN}});
         w.onmessage=e=>{
@@ -63,27 +63,32 @@ const PatchLogic={
     preview:()=>{
         const v=UI.areas.patch.value;
         if(!v.trim())return Utils.showToast(UI_TEXT.toast.patchEmpty,"error");
-        Utils.showToast("Analyzing...","info");UI.areas.diff.innerHTML='<div style="text-align:center;padding:20px;">⏳ ...</div>';
+        Utils.showToast(UI_TEXT.toast.analyzing, "info");
+        UI.areas.diff.innerHTML='<div class="diff-loader">⏳ ...</div>';
         const fd={};for(const[n,c]of PatchLogic.base)fd[n]=c;STATE.files.forEach(f=>fd[f.path.replace(/^\.\//,'')]=f.content);
         const w=new Worker('js/worker-diff.js');
         w.postMessage({patchInput:v,filesData:fd});
+        
         w.onmessage=e=>{
             if(!e.data.success){UI.areas.diff.innerHTML="";Utils.showToast(e.data.error==='invalid_patch'?UI_TEXT.toast.patchInvalid:"Diff Error","error");w.terminate();return;}
             PatchLogic.states.clear();UI.areas.diff.innerHTML="";
             let cnt=0,html="";
             e.data.results.forEach(r=>{
                 if(r.error){
-                    html+=`<div class="diff-file-wrapper"><div class="diff-file-info" style="color:#ff6b6b">📄 ${Utils.escapeHtml(r.filePath)} (Error)</div><div class="diff-message">${Utils.escapeHtml(r.error)}</div></div>`;
+                    html+=`<div class="diff-file-wrapper"><div class="diff-file-info is-error">📄 ${Utils.escapeHtml(r.filePath)} (Error)</div><div class="diff-message">${Utils.escapeHtml(r.error)}</div></div>`;
                     return;
                 }
                 const hs=r.hunks.map(h=>({...h,active:h.isValid}));
                 PatchLogic.states.set(r.filePath,{orig:r.originalContent,hunks:hs});
                 if(hs.some(h=>h.isValid))cnt++;
                 const isBase=PatchLogic.base.has(r.filePath.split('/').pop());
-                html+=`<div class="diff-file-wrapper"><div class="diff-file-info"><span>📄 ${Utils.escapeHtml(r.filePath)} <small style="opacity:0.6">${isBase?UI_TEXT.templates.labelBaseline:""}</small></span><span style="font-size:0.8em;opacity:0.8">${hs.length} changes</span></div><div class="diff-hunk-container">`;
+                html+=`<div class="diff-file-wrapper"><div class="diff-file-info"><span>📄 ${Utils.escapeHtml(r.filePath)} <small class="${isBase?'diff-label-baseline':''}">${isBase?UI_TEXT.templates.labelBaseline:""}</small></span><span class="diff-badge">${hs.length} changes</span></div><div class="diff-hunk-container">`;
+                
                 hs.forEach((h,i)=>{
-                    const st=h.isValid?"":`background:rgba(255,50,50,0.1);color:#ffaaaa;`,msg=h.isValid?"":`<span style="color:#ff6b6b;margin-right:10px;">⚠️ ${h.validityMsg}</span>`;
-                    html+=`<div class="hunk-card ${h.isValid?'':'rejected'}" data-hid="${h.id}"><div class="hunk-header" style="${st}"><span>Change #${i+1}</span><div class="hunk-actions">${msg}<button class="hunk-toggle ${h.isValid?'':'is-rejected'}" onclick="PatchLogic.toggle('${r.filePath}','${h.id}',this)">${h.isValid?'✅ Applied':'❌ Ignored'}</button></div></div><div class="diff-split-view"><div class="diff-pane pane-old">${h.diffHtml.oldHtml}</div><div class="diff-pane pane-new">${h.diffHtml.newHtml}</div></div></div>`;
+                    const headerClass = h.isValid ? "" : "is-invalid"; 
+                    const warningIcon = h.isValid ? "" : `<span class="hunk-warning-icon">⚠️ ${h.validityMsg}</span>`;
+                    const btnText = h.isValid ? UI_TEXT.buttons.hunkApplied : UI_TEXT.buttons.hunkIgnored;
+                    html+=`<div class="hunk-card ${h.isValid?'':'rejected'}" data-hid="${h.id}"><div class="hunk-header ${headerClass}"><span>Change #${i+1}</span><div class="hunk-actions">${warningIcon}<button class="hunk-toggle ${h.isValid?'':'is-rejected'}" onclick="PatchLogic.toggle('${r.filePath}','${h.id}',this)">${btnText}</button></div></div><div class="diff-split-view"><div class="diff-pane pane-old">${h.diffHtml.oldHtml}</div><div class="diff-pane pane-new">${h.diffHtml.newHtml}</div></div></div>`;
                 });
                 html+="</div></div>";
             });
@@ -97,7 +102,7 @@ const PatchLogic={
         if(!h)return;
         h.active=!h.active;
         const c=btn.closest('.hunk-card');
-        btn.textContent=h.active?"✅ Applied":"❌ Ignored";
+        btn.textContent = h.active ? UI_TEXT.buttons.hunkApplied : UI_TEXT.buttons.hunkIgnored;
         btn.classList.toggle('is-rejected',!h.active);c.classList.toggle('rejected',!h.active);
     },
     apply:type=>{ // type: 'dl' or 'copy'
@@ -115,7 +120,7 @@ const PatchLogic={
         }
         if(!res.length)return;
         if(type==='copy'){
-            if(res.length>1)Utils.showToast("Multiple files changed, copying first only","info");
+            if(res.length > 1) Utils.showToast(UI_TEXT.toast.applyCopyInfo, "info");
             Utils.copyToClipboard(res[0].content);
         }else{
             if(res.length===1){
@@ -157,7 +162,7 @@ const RequirementLogic={
         try{
             const p=await RequirementLogic.call([{role:"system",content:`You are an expert Prompt Engineer. Write a detailed coding prompt. Based on "User Idea" and "Constraints": 1.Expand requirements. 2.Define structure/standards. 3.Output strictly Markdown starting with "# Project Requirement".`},{role:"user",content:`[User Idea]\n${cmd}\n[Constraints]\n${sel||"Best practices"}\n[Context]\nExisting file structure provided.`}]);
             const o=document.getElementById('output-architect-prompt'),rc=document.getElementById('container-final-prompt');
-            o.value=p;rc.classList.remove('hidden');o.style.height=(o.scrollHeight+2)+'px';
+            o.value=p;rc.classList.remove('hidden');
             rc.scrollIntoView({behavior:'smooth',block:'nearest'});Utils.showToast("Prompt Ready","success");
         }catch(e){Utils.showToast(e.message,"error");}finally{btn.innerText=old;btn.disabled=false;}
     }

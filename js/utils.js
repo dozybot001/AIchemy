@@ -6,8 +6,8 @@ const getLangFromExt=p=>LANG_MAP[p.split('.').pop().toLowerCase()]||'';
 const Utils={
     isBinary:f=>BINARY_EXTS.has(f.name.split('.').pop().toLowerCase()),
     readFile:f=>new Promise(r=>{
-        if(Utils.isBinary(f))return r(UI_TEXT.toast.binaryOmitted);
-        if(f.size>2*1024*1024)return r(UI_TEXT.toast.fileTooLarge);
+        if(Utils.isBinary(f)) return r(UI_TEXT.toast.binaryOmitted);
+        if(f.size > 2*1024*1024) return r(UI_TEXT.toast.fileTooLarge);
         const reader=new FileReader();
         reader.onload=e=>{
             const arr=new Uint8Array(e.target.result);
@@ -36,11 +36,15 @@ const Utils={
     },
     showToast:(msg,type='info')=>{
         const c=document.getElementById('toast-overlay'),el=document.createElement('div');
-        el.className='ui-btn';
-        el.style.cssText=`margin-top:10px;background:${type==='error'?'#5c1e1e':'#1e5c2e'};border:1px solid rgba(255,255,255,0.2);pointer-events:none;animation:fadeIn 0.3s forwards;`;
+        el.className = 'ui-btn toast-item';
+        if (type === 'error') el.classList.add('toast-error');
+        else el.classList.add('toast-success');
         el.innerHTML=msg;
         c.appendChild(el);
-        setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),300)},2000);
+        setTimeout(()=>{
+            el.classList.add('toast-hiding');
+            setTimeout(()=>el.remove(),300)
+        },2000);
     },
     copyToClipboard:async t=>{
         if(!t)return Utils.showToast(UI_TEXT.toast.emptyContent,"error");

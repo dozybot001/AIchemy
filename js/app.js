@@ -13,7 +13,7 @@ const App={
         UI.areas.treeViewer.classList.add('hidden');UI.areas.treeContainer=tc;
 
         // 3. Bindings
-        App.txt();App.bind();App.dnd();
+       App.bind();App.dnd();
         
         // 4. Load Defaults
         try{
@@ -23,23 +23,7 @@ const App={
         
         window.onbeforeunload=()=>STATE.files.length?UI_TEXT.toast.beforeUnload:undefined;
     },
-    txt:()=>{
-        document.querySelectorAll('[data-i18n]').forEach(el=>{
-            const k=el.dataset.i18n,t=k.split('.').reduce((o,i)=>o?o[i]:null,UI_TEXT);
-            if(t) el.textContent=t;
-        });
-        UI.areas.treeContainer.innerHTML=STATE.files.length?UI.areas.treeContainer.innerHTML:UI_TEXT.html.treeWaiting;
-        UI.areas.diff.innerHTML=UI.areas.diff.textContent.trim()?UI.areas.diff.innerHTML:UI_TEXT.html.diffEmptyState;
-        ['treeViewer','preview','patch','restore'].forEach(k=>UI.areas[k].placeholder=UI_TEXT.placeholder[k==='treeViewer'?'tree':k]);
-        $('input-req-command').placeholder=UI_TEXT.placeholder.architectInput;
-    },
-    lang:()=>{
-        STATE.lang=STATE.lang==='zh'?'en':'zh';UI_TEXT=I18N_RESOURCES[STATE.lang];
-        App.txt();Utils.showToast(`Language: ${STATE.lang.toUpperCase()}`);
-    },
     bind:()=>{
-        // Toolbar & Actions
-        $('action-switch-lang').onclick=App.lang;
         $('action-settings').onclick=()=>{const c=RequirementLogic.cfg();UI.inputs.url.value=c.baseUrl;UI.inputs.key.value=c.apiKey;UI.inputs.model.value=c.model;UI.modals.settings.classList.remove('hidden');};
         $('action-close-settings').onclick=()=>UI.modals.settings.classList.add('hidden');
         $('action-save-settings').onclick=()=>{RequirementLogic.save({baseUrl:UI.inputs.url.value,apiKey:UI.inputs.key.value,model:UI.inputs.model.value});UI.modals.settings.classList.add('hidden');Utils.showToast("Saved","success");};
@@ -68,7 +52,7 @@ const App={
         $('action-upload-baseline').onclick=()=>UI.inputs.base.click();
         $('action-preview-patch').onclick=PatchLogic.preview;
         $('action-clear-patch').onclick=()=>UI.areas.patch.value="";
-        $('action-clear-diff').onclick=()=>{UI.areas.diff.innerHTML=UI_TEXT.html.diffEmptyState;};
+        $('action-clear-diff').onclick=()=>{UI.areas.diff.innerHTML="";};
         $('action-apply-download').onclick=()=>PatchLogic.apply('dl');
         $('action-apply-copy').onclick=()=>PatchLogic.apply('copy');
         
@@ -113,7 +97,7 @@ const App={
         dz.addEventListener('drop',async e=>{
             const items=e.dataTransfer.items;if(!items)return;
             const entries=[];for(let i=0;i<items.length;i++){const en=items[i].webkitGetAsEntry();if(en)entries.push(en);}
-            Utils.showToast("Parsing...","info");
+            Utils.showToast(UI_TEXT.toast.parsing, "info");
             STATE.files=[];let cnt=0,ign=0;
             for(const en of entries){
                 if(en.isDirectory&&!STATE.files.length) STATE.projectName=en.name;

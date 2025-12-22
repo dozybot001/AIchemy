@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIchemy</title>
-    <link rel="stylesheet" href="css/global.css">
+    <title>Unknown</title>
+    <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="toast-overlay"></div>
     <nav class="app-header">
-        <button id="action-switch-lang" class="ui-btn" data-i18n="buttons.switchLang"></button>
-        <a href="https://github.com/dozybot001/AIchemy" class="ui-btn" data-i18n="labels.github"></a>
-        <a href="https://dozybot001.github.io" class="ui-btn" data-i18n="labels.blog"></a>
-        <button id="action-settings" class="ui-btn" title="API Settings">⚙️</button> 
+        <a href="https://github.com/dozybot001/AIchemy" class="ui-btn">GitHub</a>
+        <a href="https://dozybot001.github.io" class="ui-btn">Blog</a>
+        <button id="action-settings" class="ui-btn">⚙️</button> 
     </nav>
     <div class="layout-section">
-        <div class="hero-banner"><h1 data-i18n="labels.appName"></h1></div>
+        <div class="hero-banner"><h1>Unknown</h1></div>
     </div>
     <div class="layout-section">
         <div class="app-workspace">
@@ -33,9 +32,9 @@
             
             <div class="ui-card" id="card-prompt-architect">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelArchitect"></h2>
+                    <h2>Prompt 架构师</h2>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-gen-prompt">生成</button>
+                        <button class="ui-btn" id="action-gen-prompt">生成 Prompt</button>
                         <button class="ui-btn" id="action-copy-prompt">复制</button>
                         <button class="ui-btn" id="action-reset-architect">🗑️</button>
                     </div>
@@ -51,18 +50,18 @@
 
             <div class="ui-card">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelFiles"></h2>
+                    <h2>项目文件</h2>
                     <div class="ui-stat-group">
-                        <span data-i18n="labels.statFiles"></span> <span class="ui-stat-value" id="display-file-count">0</span>
-                        <span data-i18n="labels.statTokens"></span> <span class="ui-stat-value" id="display-token-estimator">0</span>
+                        <span>文件数</span> <span class="ui-stat-value" id="display-file-count">0</span>
+                        <span>Token 估算</span> <span class="ui-stat-value" id="display-token-estimator">0</span>
                     </div>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-import-dir" data-i18n="buttons.import"></button>
-                        <button class="ui-btn" id="action-copy-structure" data-i18n="buttons.copyTree"></button>
-                        <button class="ui-btn" id="action-append-files" data-i18n="buttons.append"></button>
-                        <button class="ui-btn" id="action-select-all" data-i18n="buttons.selectAll"></button>
-                        <button class="ui-btn" id="action-merge-content" data-i18n="buttons.merge"></button> 
-                        <button class="ui-btn" id="action-reset-workspace" data-i18n="buttons.clearWorkspace"></button>
+                        <button class="ui-btn" id="action-import-dir">加载项目</button>
+                        <button class="ui-btn" id="action-copy-structure">复制树</button>
+                        <button class="ui-btn" id="action-append-files">追加</button>
+                        <button class="ui-btn" id="action-select-all">全选</button>
+                        <button class="ui-btn" id="action-merge-content">合并</button> 
+                        <button class="ui-btn" id="action-reset-workspace">清空</button>
                     </div>
                 </div>
                 <textarea class="ui-editor-area" id="viewer-file-tree"></textarea>
@@ -70,11 +69,11 @@
 
             <div class="ui-card">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelPreview"></h2>
+                    <h2>合并预览</h2>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-copy-result" data-i18n="buttons.copy"></button>
-                        <button class="ui-btn" id="action-download-text" data-i18n="buttons.download"></button>
-                        <button class="ui-btn" id="action-clear-result" data-i18n="buttons.clear"></button>
+                        <button class="ui-btn" id="action-copy-result">复制</button>
+                        <button class="ui-btn" id="action-download-text">下载</button>
+                        <button class="ui-btn" id="action-clear-result">清空</button>
                     </div>
                 </div>
                 <textarea class="ui-editor-area" id="editor-merge-result" readonly></textarea>
@@ -82,14 +81,14 @@
 
             <div class="ui-card">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelPatch"></h2>
+                    <h2>粘贴补丁</h2>
                     <div class="ui-stat-group">
-                        <span data-i18n="labels.statBaseline"></span> <span class="ui-stat-value" id="display-baseline-name" data-i18n="labels.baselineName"></span>
+                        <span>基准文件</span> <span class="ui-stat-value" id="display-baseline-name">~</span>
                     </div>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-upload-baseline" data-i18n="buttons.uploadBaseline"></button>
-                        <button class="ui-btn" id="action-preview-patch" data-i18n="buttons.previewPatch"></button>
-                        <button class="ui-btn" id="action-clear-patch" data-i18n="buttons.clear"></button>
+                        <button class="ui-btn" id="action-upload-baseline">上传基准文本</button>
+                        <button class="ui-btn" id="action-preview-patch">预览变更</button>
+                        <button class="ui-btn" id="action-clear-patch">清空</button>
                     </div>
                 </div>
                 <textarea class="ui-editor-area" id="input-patch-source"></textarea>
@@ -97,11 +96,11 @@
             
             <div class="ui-card">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelDiff"></h2>
+                    <h2>变更预览</h2>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-apply-download" data-i18n="buttons.applyDownload"></button>
-                        <button class="ui-btn" id="action-apply-copy" data-i18n="buttons.applyCopy"></button>
-                        <button class="ui-btn" id="action-clear-diff" data-i18n="buttons.clear"></button>
+                        <button class="ui-btn" id="action-apply-download">应用 & 下载</button>
+                        <button class="ui-btn" id="action-apply-copy">应用 & 复制</button>
+                        <button class="ui-btn" id="action-clear-diff">清空</button>
                     </div>
                 </div>
                 <div class="ui-editor-area diff-content-view" id="viewer-diff-result"></div>
@@ -109,10 +108,10 @@
 
             <div class="ui-card">
                 <div class="ui-card__header">
-                    <h2 data-i18n="labels.panelRestore"></h2>
+                    <h2>手动还原</h2>
                     <div class="ui-toolbar">
-                        <button class="ui-btn" id="action-export-zip" data-i18n="buttons.packDownload"></button> 
-                        <button class="ui-btn" id="btnClearRestore" data-i18n="buttons.clear"></button>
+                        <button class="ui-btn" id="action-export-zip">打包下载</button> 
+                        <button class="ui-btn" id="btnClearRestore">清空</button>
                     </div>
                 </div>
                 <textarea class="ui-editor-area" id="input-restore-source"></textarea>
@@ -129,15 +128,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>API Base URL</label>
-                    <input type="text" id="setting-base-url" class="ui-input" placeholder="https://api.openai.com/v1">
+                    <input type="text" id="setting-base-url" class="ui-input" placeholder="例如: https://api.openai.com/v1">
                 </div>
                 <div class="form-group">
                     <label>API Key</label>
                     <input type="password" id="setting-api-key" class="ui-input">
                 </div>
                 <div class="form-group">
-                    <label>Model</label>
-                    <input type="text" id="setting-model" class="ui-input" placeholder="gpt-4o">
+                    <label>模型 Model</label>
+                    <input type="text" id="setting-model" class="ui-input" placeholder="例如: gpt-4o">
                 </div>
             </div>
             <div class="modal-footer">
