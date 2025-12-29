@@ -36,5 +36,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (val) DB.set('projectName', val);
     });
 
-    console.log("AIchemy App Initialized.");
+    console.log("Caret App Initialized.");
 });
