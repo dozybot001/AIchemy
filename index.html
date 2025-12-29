@@ -88,12 +88,23 @@
                     </div>
                     <div class="separator-line" style="height: 1px; background: var(--gray-l3); margin: 4px 0;"></div>
                     <div class="menu-item model-option" data-value="Custom API">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">api</span>
                         <span>Use Custom API</span>
                     </div>
                 </div>
             </div>
-            <div class="header-right">
+            <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                <div style="position: relative;">
+                    <button id="btn-utils-top" class="icon-btn-header" title="Utilities">
+                        <span class="material-symbols-outlined">construction</span>
+                    </button>
+                    <div id="utils-menu" class="model-menu hidden" style="right: 0; left: auto; width: 220px; transform-origin: top right;">
+                        <div class="menu-item model-option" id="util-clean-context">
+                            <span class="material-symbols-outlined">cleaning_services</span>
+                            <span>Remove Comments</span>
+                        </div>
+                    </div>
+                </div>
+
                 <button id="btn-settings-top" class="icon-btn-header">
                     <span class="material-symbols-outlined">settings</span>
                 </button>
@@ -177,7 +188,12 @@
     </main>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/idb@8/build/umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>

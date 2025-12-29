@@ -190,6 +190,50 @@
     flex-direction: column;
 }
 
+/* --- Markdown Styles --- */
+.markdown-body {
+    font-family: 'Google Sans', sans-serif;
+}
+.markdown-body p {
+    margin-bottom: 12px;
+}
+.markdown-body p:last-child {
+    margin-bottom: 0;
+}
+.markdown-body pre {
+    background-color: #0d1117; /* GitHub Dark Code Bg */
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    overflow-x: auto;
+    border: 1px solid var(--gray-l3);
+}
+.markdown-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+/* Inline code */
+.markdown-body :not(pre) > code {
+    background-color: rgba(120, 120, 120, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.markdown-body ul, .markdown-body ol {
+    margin-bottom: 12px;
+    padding-left: 24px;
+}
+.markdown-body li {
+    margin-bottom: 4px;
+}
+/* Ensure text color inside User bubble is readable against user bubble bg */
+.chat-bubble.user.markdown-body pre {
+    background-color: rgba(0,0,0,0.2); 
+    border: none;
+}
+.chat-bubble.user.markdown-body :not(pre) > code {
+    background-color: rgba(0,0,0,0.2);
+}
+
 /* --- Input Area --- */
 .input-wrapper {
     width: 100%;
@@ -386,33 +430,52 @@ textarea#main-input {
 .chip .material-symbols-outlined { font-size: 20px;
 }
 
-/* --- Dynamic Form Styles --- */
+/* --- Dynamic Form Styles (Prompt Mode) --- */
 .form-bubble {
     background-color: var(--gray-l2) !important;
-    border-radius: 12px !important;
-    padding: 20px !important;
+    border-radius: 16px !important;
+    padding: 0 !important; /* Reset padding for header/body split */
     width: 100%;
     border: 1px solid var(--gray-l3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.form-title {
-    margin-bottom: 16px;
-    font-size: 1rem;
+.form-header {
+    background-color: var(--gray-l3);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--gray-l4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.form-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
     color: var(--text-1);
-    border-bottom: 1px solid var(--gray-l3);
-    padding-bottom: 12px;
+}
+
+.form-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .form-group-item {
-    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .form-label {
-    display: block;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-3);
-    margin-bottom: 8px;
-    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
 }
 
 .form-options {
@@ -421,7 +484,7 @@ textarea#main-input {
     gap: 8px;
 }
 
-/* 隐藏原生 Radio/Checkbox */
+/* Option Chips (Modern Look) */
 .option-chip input {
     position: absolute;
     opacity: 0;
@@ -431,32 +494,57 @@ textarea#main-input {
 
 .option-chip span {
     display: inline-flex;
-    padding: 6px 14px;
-    background-color: var(--gray-l3);
+    align-items: center;
+    padding: 8px 16px;
+    background-color: transparent;
     color: var(--text-2);
-    border-radius: 6px;
+    border-radius: 999px; /* Pill shape */
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    border: 1px solid var(--gray-l4);
     user-select: none;
-}
-
-.option-chip:hover span {
-    background-color: var(--gray-l4);
-    color: var(--text-1);
-}
-
-/* 选中状态 */
-.option-chip input:checked + span {
-    background-color: var(--state-success-bg);
-    color: var(--state-success-text);
-    border-color: var(--state-success-text);
     font-weight: 500;
 }
 
+.option-chip:hover span {
+    background-color: var(--gray-l3);
+    color: var(--text-1);
+    border-color: var(--text-3);
+}
+
+/* Active State */
+.option-chip input:checked + span {
+    background-color: var(--text-1);
+    color: var(--gray-l1); /* Inverse text */
+    border-color: var(--text-1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Disabled Form State (After submission) */
+.form-bubble.submitted .option-chip span {
+    cursor: default;
+    opacity: 0.7;
+}
+.form-bubble.submitted .option-chip:hover span {
+    border-color: var(--gray-l4); /* Reset hover */
+}
+.form-bubble.submitted .btn-primary {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--gray-l4);
+}
+
 .form-actions-row {
-    margin-top: 24px;
+    margin-top: 12px;
     display: flex;
     justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-l3);
+}
+
+/* Result Section attached to form */
+.prompt-result-section {
+    padding: 0 20px 20px 20px;
+    animation: fadeIn 0.3s ease;
 }

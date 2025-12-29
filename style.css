@@ -1,6 +1,11 @@
 @import 'css/theme.css';
 @import 'css/base.css';
-@import 'css/public.css';
+/* Layout & Global */
+@import 'css/layout.css';
+/* Components */
+@import 'css/components/sidebar.css';
+@import 'css/components/modal.css';
+@import 'css/components/button.css';
 @import 'css/components/chat.css';
 @import 'css/components/tree.css';
 @import 'css/components/diff.css';

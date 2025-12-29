@@ -10,12 +10,17 @@ export const SettingsManager = {
         this.bindModelSelector();
         this.bindSettingsMenu();
         
-        Store.subscribe((key, value) => {
-            if (key === 'theme') {
-                this.applyTheme(value);
-            }
+        Store.subscribe('theme', (value) => {
+            this.applyTheme(value);
         });
         this.applyTheme(Store.state.theme);
+        Store.subscribe('currentModel', (value) => {
+            localStorage.setItem('current_model', value);
+        });
+        if (this.dom.btnModelSelector) {
+            const textSpan = this.dom.btnModelSelector.querySelector('#model-text');
+            if (textSpan) textSpan.textContent = Store.state.currentModel;
+        }
     },
 
     cacheDOM() {
@@ -107,6 +112,8 @@ export const SettingsManager = {
                 const selectedValue = option.getAttribute('data-value');
                 const textSpan = btnModelSelector.querySelector('#model-text');
                 if (textSpan) textSpan.textContent = selectedValue;
+                Store.state.currentModel = selectedValue;
+
                 modelMenu.classList.add('hidden');
             }
         });

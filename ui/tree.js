@@ -1,5 +1,6 @@
 import { FileSystem } from '../lib/file-system.js';
 import { Store } from '../store.js';
+import { DB } from '../lib/db.js';
 
 export const TreeManager = {
     dom: {},
@@ -20,15 +21,13 @@ export const TreeManager = {
         };
 
         this.setupEventListeners();
-        
-        Store.subscribe((key, value) => {
-            if (key === 'tree') {
-                this.renderASCIITree(value);
-                this.updateProjectStats(value);
-            }
-            if (key === 'isSidebarExpanded') {
-                this.toggleSidebar(value);
-            }
+        Store.subscribe('tree', (value) => {
+            this.renderASCIITree(value);
+            this.updateProjectStats(value);
+        });
+
+        Store.subscribe('isSidebarExpanded', (value) => {
+            this.toggleSidebar(value);
         });
 
         this.renderASCIITree(Store.state.tree);
@@ -155,34 +154,99 @@ export const TreeManager = {
         const file = files[0]; 
         
         try {
-            Store.state.contextContent = await FileSystem.readFileContent(file);
+            const content = await FileSystem.readFileContent(file);
+            Store.state.contextContent = content;
+
+            // Extract project name for DB restoration
+            const treeMatch = content.match(/^Project Tree:\n(.*?)\//m);
+            const extractedName = treeMatch ? treeMatch[1].trim() : file.name.replace(/\.txt$/i, '');
+            Store.state.projectName = extractedName;
+
+            this.addContextHistory(file.name, content);
         } catch (e) {
             console.error("Failed to read context file", e);
             alert("Error reading context file");
             return;
         }
 
-        this.addContextHistory(file.name);
         if (!Store.state.isSidebarExpanded && this.dom.btnMenu) {
             this.dom.btnMenu.click();
         }
     },
 
-    addContextHistory(name) {
+    // 加载初始历史记录
+    async initHistory() {
         if (!this.dom.ctxHistoryList) return;
-        const emptyState = this.dom.ctxHistoryList.querySelector('.ctx-empty-state');
-        if (emptyState) emptyState.remove();
+        try {
+            const history = await DB.get('context_history') || [];
+            if (history.length > 0) {
+                const emptyState = this.dom.ctxHistoryList.querySelector('.ctx-empty-state');
+                if (emptyState) emptyState.remove();
+                // 倒序渲染，因为 DOM prepend 是插到前面，但数组我们想保持时间顺序
+                [...history].reverse().forEach(h => this.renderHistoryItem(h));
+            }
+        } catch (e) {
+            console.warn("Failed to load history", e);
+        }
+    },
+
+    async addContextHistory(name, contentPayload) {
+        if (!this.dom.ctxHistoryList) return;
+        if (!contentPayload) return; // 必须有内容才能保存
 
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        const historyItem = {
+            id: Date.now(),
+            name: name,
+            content: contentPayload,
+            timeStr: timeStr
+        };
 
-        const item = document.createElement('div');
-        item.className = 'ctx-history-item';
-        item.innerHTML = `
-            <span class="ctx-filename" title="${name}">${name}</span>
-            <span class="ctx-date">${timeStr}</span>
+        // 更新 DB (保持最近 7 条)
+        try {
+            let history = await DB.get('context_history') || [];
+            history.unshift(historyItem);
+            if (history.length > 7) history = history.slice(0, 7);
+            await DB.set('context_history', history);
+        } catch (e) {
+            console.error("DB History Save Error", e);
+        }
+
+        // 更新 UI
+        const emptyState = this.dom.ctxHistoryList.querySelector('.ctx-empty-state');
+        if (emptyState) emptyState.remove();
+        
+        // 移除 UI 上超过 7 条的旧元素
+        const currentItems = this.dom.ctxHistoryList.querySelectorAll('.ctx-history-item');
+        if (currentItems.length >= 7) {
+            currentItems[currentItems.length - 1].remove();
+        }
+
+        this.renderHistoryItem(historyItem);
+    },
+
+    renderHistoryItem(item) {
+        const div = document.createElement('div');
+        div.className = 'ctx-history-item';
+        div.style.cursor = 'pointer';
+        div.title = 'Click to Download TXT';
+        
+        div.onclick = () => {
+            const blob = new Blob([item.content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${item.name.replace(/[^a-zA-Z0-9._-]/g, '_')}.txt`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        };
+
+        div.innerHTML = `
+            <span class="ctx-filename">${item.name}</span>
+            <span class="ctx-date">${item.timeStr}</span>
         `;
-        this.dom.ctxHistoryList.prepend(item);
+        this.dom.ctxHistoryList.prepend(div);
     },
 
     setupUploadZone(zoneElement, handler, isDirectory = false, accept = '') {
